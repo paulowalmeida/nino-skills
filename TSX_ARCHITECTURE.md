@@ -1,10 +1,10 @@
-# Nino — TSX Architecture Rules
+# Nino — Regras de Arquitetura TSX
 
-> Working contract for the frontend component architecture. This document consolidates the decisions made during the architecture review.
+> Contrato de trabalho para a arquitetura de componentes frontend. Este documento consolida as decisões tomadas durante a revisão da arquitetura.
 
-## 1. Architectural model
+## 1. Modelo arquitetural
 
-The UI follows **Atomic Design**:
+A UI segue **Atomic Design**:
 
 ```text
 Layout
@@ -20,81 +20,81 @@ Molecule
 Atom
 ```
 
-`Layout` is a structural application concern and is **outside the Atomic Design hierarchy**. It wraps/governs Pages and provides persistent application structure such as header, sidebar, navigation and content areas.
+`Layout` é uma responsabilidade estrutural da aplicação e está **fora da hierarquia do Atomic Design**. Ele envolve/governa Pages e fornece a estrutura persistente da aplicação, como header, sidebar, navegação e áreas de conteúdo.
 
 ### Atoms
 
-- Basic UI units.
-- May come from the Design System or be specific to the consuming app.
-- No business logic.
-- No API/service access.
-- Must not depend on higher Atomic Design levels.
+- Unidades básicas de UI.
+- Podem vir do Design System ou ser específicos da aplicação consumidora.
+- Não possuem lógica de negócio.
+- Não acessam API/Service.
+- Não podem depender de níveis superiores do Atomic Design.
 
 ### Molecules
 
-- Combine two or more Atoms into a small functional UI unit.
-- May use DS Atoms and app-specific Atoms.
-- No business logic.
-- No direct API/service access.
-- May contain local UI state when that state belongs to the Molecule's own interaction.
+- Combinam dois ou mais Atoms em uma unidade funcional de UI.
+- Podem utilizar Atoms do DS e Atoms específicos da aplicação.
+- Não possuem lógica de negócio.
+- Não acessam API/Service diretamente.
+- Podem possuir estado local quando esse estado pertence à própria interação da Molecule.
 
 ### Organisms
 
-- Significant UI sections composed from Molecules and/or Atoms.
-- May contain local state and interaction belonging to the section itself.
-- No business logic.
-- No direct API/service access.
-- Must not depend on Templates or Pages.
+- Seções significativas da UI compostas por Molecules e/ou Atoms.
+- Podem possuir estado local e interação pertencentes à própria seção.
+- Não possuem lógica de negócio.
+- Não acessam API/Service diretamente.
+- Não podem depender de Templates ou Pages.
 
 ### Templates
 
-- Define the structural composition of a page.
-- Compose Organisms, Molecules and Atoms.
-- Represent page structure, not a concrete route instance or concrete application data.
-- No business logic.
-- No direct API/service access.
+- Definem a composição estrutural de uma página.
+- Compõem Organisms, Molecules e Atoms.
+- Representam a estrutura da página, não uma rota concreta nem dados concretos da aplicação.
+- Não possuem lógica de negócio.
+- Não acessam API/Service diretamente.
 
 ### Pages
 
-- Represent a concrete application route/context.
-- Act as the **governance UI layer** for that route.
-- Coordinate page context, page state, data and dependencies.
-- Compose/use Templates and inject the required data, actions and dependencies into the presentation tree.
-- Should not absorb visual responsibilities belonging to lower layers.
+- Representam uma rota/contexto concreto da aplicação.
+- Atuam como a **camada de governança da UI** daquela rota.
+- Coordenam contexto, estado, dados e dependências da página.
+- Compõem/utilizam Templates e injetam os dados, ações e dependências necessários na árvore de apresentação.
+- Não devem absorver responsabilidades visuais pertencentes às camadas inferiores.
 
-## 2. Composition and dependencies
+## 2. Composição e dependências
 
-### Direction
+### Direção
 
-Dependencies flow downward through the Atomic Design hierarchy:
+As dependências fluem para baixo na hierarquia do Atomic Design:
 
 ```text
 Page → Template → Organism → Molecule → Atom
 ```
 
-A component **must not depend on another component in the same Atomic Design layer**.
+Um componente **não pode depender de outro componente da mesma camada do Atomic Design**.
 
-A higher layer may skip lower layers when appropriate. For example, an Organism may use an Atom directly.
+Uma camada superior pode pular camadas inferiores quando isso fizer sentido. Por exemplo, um Organism pode utilizar um Atom diretamente.
 
-However:
+Porém:
 
-> A higher-level component must not become an arbitrary grouping of lower-level components. If a group of Atoms forms a coherent, reusable functional unit, it should be represented as a Molecule rather than remaining an incidental Atom grouping inside an Organism.
+> Um componente de nível superior não deve se tornar um agrupamento arbitrário de componentes de nível inferior. Se um conjunto de Atoms formar uma unidade funcional coerente e reutilizável, ele deve ser representado como uma Molecule em vez de permanecer como um agrupamento incidental de Atoms dentro de um Organism.
 
 ## 3. Design System — DS-first
 
-The Design System is **DS-first, not DS-only**.
+O Design System é **DS-first, não DS-only**.
 
-Before creating any UI, the agent must:
+Antes de criar qualquer UI, o agente deve:
 
-1. Search the Design System for an existing suitable solution.
-2. Reuse the existing DS solution when it adequately solves the requirement.
-3. If the DS does not provide a suitable solution, create an app-specific component when appropriate.
+1. Procurar no Design System uma solução existente adequada.
+2. Reutilizar a solução existente quando ela atender ao requisito.
+3. Se o DS não possuir uma solução adequada, criar um componente específico da aplicação quando apropriado.
 
-The same discovery principle applies to existing components in the application: before creating a new component, look for an existing component with the same or sufficiently close responsibility and prefer reuse/composition when appropriate.
+O mesmo princípio vale para componentes existentes na própria aplicação: antes de criar um novo componente, procurar um componente com a mesma responsabilidade ou suficientemente próxima e priorizar reutilização/composição quando apropriado.
 
-## 4. Component structure
+## 4. Estrutura dos componentes
 
-Components are organized by Atomic Design layer:
+Os componentes são organizados por camada do Atomic Design:
 
 ```text
 src/
@@ -106,14 +106,14 @@ src/
 └── layouts/
 ```
 
-Rules:
+Regras:
 
-- One component per folder.
-- No barrel files / `index.ts` for component exports.
-- The component folder contains the TSX and its CSS Module.
-- Tests live outside `src`, under `__tests__`, mirroring the `src` directory structure.
+- Um componente por pasta.
+- Não utilizar barrel files / `index.ts` para exportar componentes.
+- A pasta do componente contém o TSX e seu CSS Module.
+- Os testes ficam fora de `src`, dentro de `__tests__`, replicando a estrutura de `src`.
 
-Example:
+Exemplo:
 
 ```text
 src/
@@ -128,28 +128,28 @@ __tests__/
         └── Button.test.tsx
 ```
 
-## 5. Naming
+## 5. Nomes autoexplicativos
 
-Names must communicate the **responsibility, domain and/or intent** of the thing they represent without requiring the reader to inspect the implementation.
+Os nomes devem comunicar claramente a **responsabilidade, domínio e/ou intenção** do elemento que representam, sem exigir que o leitor consulte sua implementação.
 
-Rules:
+Regras:
 
-- Name by responsibility/intent, not appearance.
-- Avoid generic names when they hide intent (`Container`, `Wrapper`, `Item`, `Data`, etc.).
-- Avoid names based on implementation details (`FlexContainer`, etc.).
-- Avoid unnecessary abbreviations.
-- Names should remain valid when the visual implementation changes.
-- Do not use comments to compensate for a poor name; improve the name first.
+- Nomear pela responsabilidade/intenção, não pela aparência.
+- Evitar nomes genéricos quando eles escondem a intenção (`Container`, `Wrapper`, `Item`, `Data`, etc.).
+- Evitar nomes baseados em detalhes de implementação (`FlexContainer`, etc.).
+- Evitar abreviações desnecessárias.
+- O nome deve continuar válido caso a implementação visual seja alterada.
+- Não utilizar comentários para compensar um nome ruim; primeiro melhorar o nome.
 
-## 6. Props and dependency injection
+## 6. Props e injeção de dependência
 
-- Props must be explicitly typed.
-- Pass only the data the component actually needs.
-- Avoid passing an entire domain object when only a subset is required.
-- Behaviors and external dependencies should be injected rather than discovered/created inside presentation components.
-- Avoid `any`.
+- Props devem ser explicitamente tipadas.
+- Passar somente os dados que o componente realmente precisa.
+- Evitar passar um objeto de domínio inteiro quando apenas uma parte dele é necessária.
+- Comportamentos e dependências externas devem ser injetados, em vez de descobertos/criados dentro dos componentes de apresentação.
+- Evitar `any`.
 
-Example:
+Exemplo:
 
 ```tsx
 <UserCard
@@ -159,22 +159,22 @@ Example:
 />
 ```
 
-## 7. State
+## 7. Estado
 
-### Business/shared state
+### Estado de negócio/compartilhado
 
-**Zustand is the source of truth for application/business state.**
+**Zustand é a fonte da verdade para o estado de negócio/aplicação.**
 
-- Presentation components must not consume Zustand directly.
-- Access to Zustand from the UI is mediated by an eligible Hook.
-- Atoms, Molecules and Organisms must not directly consume Zustand Hooks.
-- They receive required data/actions through props or dependency injection.
-- Pages are the governance layer that coordinates state and injects what the presentation tree needs.
+- Componentes de apresentação não devem consumir Zustand diretamente.
+- O acesso da UI ao Zustand é mediado por um Hook elegível.
+- Atoms, Molecules e Organisms não devem consumir Hooks do Zustand diretamente.
+- Eles recebem os dados e ações necessários por props ou injeção de dependência.
+- Pages são a camada de governança que coordena o estado e injeta o necessário na árvore de apresentação.
 
-Integration flow:
+Fluxo de integração:
 
 ```text
-Page / eligible Hook
+Page / Hook elegível
         ↓
      Zustand
         ↓
@@ -183,26 +183,26 @@ Page / eligible Hook
     API / Endpoint
 ```
 
-A Service may communicate directly with Zustand when the operation requires it, but a Service must never communicate directly with presentation/UI layers.
+Um Service pode se comunicar diretamente com Zustand quando a operação exigir isso, mas um Service nunca deve se comunicar diretamente com as camadas de apresentação/UI.
 
-### Local UI state
+### Estado local de UI
 
-UI-only state should remain local to the smallest component capable of governing it.
+Estado exclusivamente de UI deve permanecer no menor componente capaz de governá-lo.
 
-Examples include modal visibility, selected tab, accordion expansion and temporary input state.
+Exemplos: visibilidade de modal, aba selecionada, expansão de accordion e estado temporário de input.
 
-Use React-local mechanisms such as `useState` or `useReducer` for this state by default. Do not globalize UI state in Zustand without a real need for shared state.
+Usar mecanismos locais do React, como `useState` ou `useReducer`, para esse estado por padrão. Não transformar estado de UI em estado global no Zustand sem uma necessidade real de compartilhamento.
 
 ## 8. Hooks
 
-- Hooks have a single responsibility.
-- A Hook should perform one coherent operation, not accumulate multiple operations merely because they belong to the same domain.
-- Hooks may compose other Hooks without absorbing their responsibilities.
-- Hooks are organized by domain/responsibility, not by Atomic Design layer.
-- Domain-specific Hooks live in domain subfolders.
-- Truly generic Hooks may live directly under `hooks/`.
+- Todo Hook possui **responsabilidade única**.
+- Todo Hook deve executar **uma única operação coerente**; não deve acumular operações diferentes apenas porque pertencem ao mesmo domínio.
+- Hooks podem compor outros Hooks sem absorver as responsabilidades deles.
+- Hooks são organizados por domínio/responsabilidade, não por camada do Atomic Design.
+- Hooks específicos de domínio ficam em subpastas do domínio.
+- Hooks realmente genéricos podem ficar diretamente em `hooks/`.
 
-Example:
+Exemplo:
 
 ```text
 hooks/
@@ -218,16 +218,16 @@ hooks/
 
 ## 9. Services
 
-A Service is responsible for communication with external data sources/infrastructure.
+Um Service é responsável pela comunicação com fontes externas de dados ou infraestrutura.
 
-- Services may communicate with Zustand.
-- Services communicate with APIs/endpoints through the appropriate integration mechanism.
-- Services never communicate directly with presentation/UI layers.
-- Services do not render UI.
-- Services do not contain presentation logic.
-- A Service should have a single responsibility and represent one coherent operation.
+- Services podem se comunicar diretamente com Zustand.
+- Services se comunicam com APIs/endpoints através do mecanismo de integração apropriado.
+- Services nunca se comunicam diretamente com as camadas de apresentação/UI.
+- Services não renderizam UI.
+- Services não possuem lógica de apresentação.
+- Um Service deve possuir responsabilidade única e representar uma única operação coerente.
 
-Forbidden direct relationship:
+Relações diretas proibidas:
 
 ```text
 Service → Atom
@@ -237,8 +237,8 @@ Service → Template
 Service → Page
 ```
 
-## 10. Core architectural principle
+## 10. Princípio arquitetural central
 
-The agent must **implement within these rules**, rather than treating them as an audit checklist to be applied only after implementation.
+O agente deve **implementar respeitando estas regras**, e não tratá-las como uma checklist de auditoria executada somente depois da implementação.
 
-Critical rules should eventually be enforced mechanically where possible (linting, AST checks, hooks, etc.) instead of relying exclusively on instructions in a skill file.
+As regras críticas devem, quando possível, ser posteriormente protegidas por enforcement mecânico (lint, AST, hooks, etc.), em vez de depender exclusivamente de instruções em uma Skill.
