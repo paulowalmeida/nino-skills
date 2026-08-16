@@ -10,35 +10,37 @@ The absence of explicit permission **MUST NOT** be interpreted as permission to 
 
 Code **MUST** be written for the current requirement, existing project conventions, and long-term maintainability.
 
-The agent **MUST prefer the simplest implementation that fully satisfies the requirement without violating project rules**.
+The agent **MUST** prefer the simplest implementation that fully satisfies the requirement without violating project rules.
 
 The agent **MUST NOT** introduce complexity merely because a more abstract design is possible.
 
 ## Single Responsibility
 
-Every function, arrow function, callback, custom Hook, selector, Service operation, utility, and component **MUST have one coherent responsibility**.
+Every function, arrow function, callback, custom Hook, handler, selector, Service operation, utility, and component **MUST have one coherent responsibility**.
 
-A unit has multiple responsibilities when it performs distinct operations, policies, transformations, or decisions that could independently change or be tested.
+A unit has multiple responsibilities when it performs distinct operations, policies, decisions, transformations, side effects, or other behaviors that could reasonably change independently.
 
-The agent **MUST NOT** combine unrelated operations merely because they belong to the same domain.
+The agent **MUST NOT** combine unrelated responsibilities merely because they belong to the same domain or file.
 
-Services **MAY contain multiple functions or operations belonging to the same domain**. This does not exempt any individual function from the single-responsibility and complexity rules below.
+Services MAY contain multiple operations from the same domain. This does **NOT** relax the Single Responsibility rule for each individual operation.
 
 Examples:
 
 ```text
-useOrders()                  ✅ one coherent operation
-useCreateOrder()             ✅ one coherent operation
+useOrders()                  ✅ one coherent responsibility
+useCreateOrder()             ✅ one coherent responsibility
 useOrdersAndPermissions()    ❌ unrelated responsibilities
+OrderService.createOrder()   ✅ one operation
+OrderService.cancelOrder()   ✅ another operation
 ```
 
-When a unit begins to accumulate independent responsibilities, **split it by responsibility instead of adding more branches to the same abstraction**.
+When a function begins accumulating distinct responsibilities, the agent **MUST split it by responsibility instead of adding another branch to the same function**.
 
-## Function Complexity
+## Function Complexity — Hard Limit
 
-**Cyclomatic complexity MUST NOT exceed 5 for any individual function.**
+The **cyclomatic complexity of every individual function MUST be 5 or less**.
 
-This rule applies to:
+This rule applies to all individual functions regardless of where they are defined:
 
 - function declarations;
 - arrow functions;
@@ -48,38 +50,67 @@ This rule applies to:
 - event handlers;
 - selectors;
 - utility functions;
+- asynchronous functions;
 - Service operations;
-- async functions;
-- functions in `.ts` and `.tsx` files.
+- class methods.
 
-The exception is limited to a function whose **primary responsibility is directly composing or returning TSX markup**. That rendering/composition function MAY exceed complexity 5 when the branching is inherent to the UI composition itself.
+Services are NOT exempt. A Service file MAY contain many operations, but **each individual operation MUST have cyclomatic complexity ≤ 5**.
 
-This exception applies to the render/composition function only. It does **NOT** exempt helpers, callbacks, handlers, Hooks, selectors, or Service operations used by that function.
+### TSX Composition Exception
 
-A Service file MAY contain many operations. A Service file MAY therefore have a high total complexity across its functions. **The limit is per function, not per file or module.**
+There is exactly one exception to the complexity limit:
 
-### Complexity decomposition
+> A function whose **primary and clearly identifiable responsibility is rendering/composing TSX markup** MAY exceed complexity 5 when that complexity is inherent to the UI composition itself.
 
-When a function exceeds complexity 5, the agent **MUST** reduce its complexity before considering the task complete, unless the function qualifies for the explicit TSX rendering/composition exception.
+This exception:
 
-The preferred strategy is to extract **meaningful responsibilities**, for example:
+- applies only to the TSX composition/render function;
+- MUST NOT be used by helper functions called by that function;
+- MUST NOT be used by Hooks, handlers, selectors, Services, utilities, callbacks, or business-logic functions;
+- MUST NOT be used merely because a function happens to live in a `.tsx` file.
+
+Example:
+
+```tsx
+// ✅ exception may apply: primary responsibility is TSX composition
+return (
+  <View>
+    {conditionA && <A />}
+    {conditionB ? <B /> : <C />}
+  </View>
+)
+```
 
 ```ts
+// ❌ no exception: function performs business/processing logic
 function processOrder(order: Order) {
-  validateOrder(order)
-  const total = calculateOrderTotal(order)
-  const discount = applyDiscount(total, order.customer)
-  return persistOrder(order, total, discount)
+  // complexity must remain ≤ 5
 }
 ```
 
-Extracted functions **MUST represent real responsibilities or materially improve local comprehension**.
+### Required Response to Complexity > 5
 
-It is **FORBIDDEN** to split code into meaningless one-line wrappers, rename equivalent blocks, or otherwise decompose code solely to manipulate the complexity metric.
+When a non-exempt function exceeds complexity 5, the agent **MUST reduce the function's complexity before considering the task complete**.
 
-Do not replace complexity with hidden complexity through nested callbacks, indirection, dynamic dispatch, or helper chains solely to make the metric pass.
+Preferred techniques include:
 
-## Functions
+- guard clauses;
+- early returns;
+- extracting a meaningful decision or operation;
+- lookup tables/maps instead of long conditional chains;
+- separating validation from transformation;
+- separating orchestration from business rules.
+
+The agent **MUST NOT**:
+
+- split code into meaningless wrappers solely to make the metric pass;
+- move complexity into another function merely to hide it;
+- use indirection to evade the complexity check;
+- add an artificial function boundary with no coherent responsibility.
+
+Any extracted function **MUST itself satisfy Single Responsibility** and **MUST independently obey the complexity limit**.
+
+## Functions Must Remain Local and Understandable
 
 Functions **MUST** be small enough that their purpose and control flow can be understood locally.
 
@@ -179,7 +210,7 @@ Business logic **MUST NOT** be hidden behind a misleading utility name, componen
 
 ## Constants and Configuration
 
-Values with business or application meaning **MUST** be named and centralized when they are reused or represent policy.
+Values with business or application meaning **MUST be named and centralized when they are reused or represent policy**.
 
 The agent **MUST NOT** scatter duplicated literals when a named constant, configuration object, enum, or domain representation is more accurate.
 
@@ -275,11 +306,9 @@ There is no universal maximum number of lines that automatically makes code inco
 
 However, the agent **MUST treat growing size and complexity as a signal to reassess responsibility**.
 
-A file or function that becomes difficult to understand because it contains multiple responsibilities **MUST** be decomposed by responsibility, not arbitrarily by line count.
+A file or function that becomes difficult to understand because it contains multiple responsibilities **MUST be decomposed by responsibility, not arbitrarily by line count**.
 
 A split **MUST NOT** be performed merely to satisfy an artificial line-count target.
-
-The complexity limit in this document applies **per function**, not per file. A file or Service module MAY contain multiple coherent functions.
 
 ## Refactoring During Feature Work
 
@@ -309,19 +338,22 @@ If these answers cannot be established from the repository and task context, **D
 Before completing a coding task, the agent **MUST**:
 
 1. inspect the final changed code;
-2. verify that types and contracts remain correct;
-3. verify that no forbidden workaround or dependency was introduced;
-4. verify that every non-exempt function has cyclomatic complexity ≤ 5;
-5. verify that each function has one coherent responsibility;
-6. run the relevant typecheck, lint, tests, complexity checks, or other available checks;
-7. inspect the final diff for unrelated changes.
+2. verify that every individual function complies with Single Responsibility;
+3. verify that every non-exempt individual function has cyclomatic complexity ≤ 5;
+4. confirm that any complexity exception is limited to the TSX composition/render function and is not hiding complexity in helpers;
+5. verify that types and contracts remain correct;
+6. verify that no forbidden workaround or dependency was introduced;
+7. run the relevant typecheck, lint, complexity, tests, or other available checks;
+8. inspect the final diff for unrelated changes.
 
 Passing automated checks does not replace reviewing the implementation against these rules.
 
 ## Enforcement
 
-The following rules **MUST** be protected mechanically whenever technically possible:
+The following rules **MUST be protected mechanically whenever technically possible**:
 
+- cyclomatic complexity ≤ 5 for every non-exempt function;
+- Single Responsibility violations where objective detection is possible;
 - forbidden `any` usage;
 - prohibited dependency direction;
 - circular dependencies;
@@ -329,12 +361,10 @@ The following rules **MUST** be protected mechanically whenever technically poss
 - unused code and imports;
 - type errors;
 - prohibited export patterns;
-- architecture-specific file/folder conventions;
-- cyclomatic complexity > 5 for non-exempt functions;
-- obvious violations of single responsibility where static analysis can reasonably detect them.
+- architecture-specific file/folder conventions.
 
 When an automated check fails, the agent **MUST fix the implementation rather than weaken the check**.
 
 ## Final Rule
 
-> **Every function has one responsibility. Every non-exempt function has cyclomatic complexity ≤ 5. Services may contain many coherent operations, but no individual operation is exempt. Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, avoids speculative abstraction, and leaves no hidden error or unrelated change behind.**
+> **Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, keeps every individual function single-purpose and within the complexity limit, avoids speculative abstraction, and leaves no hidden error or unrelated change behind.**
