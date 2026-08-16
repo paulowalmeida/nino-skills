@@ -33,17 +33,19 @@ An Atom is the smallest UI unit with one clear responsibility.
 **MUST:**
 - represent one visual/functional responsibility;
 - remain independent of business logic and infrastructure;
-- receive data and behavior through props/dependency injection when necessary;
+- receive external data and behavior through props/dependency injection when necessary;
 - reuse a Design System Atom when the DS already satisfies the requirement;
 - be application-specific when the DS has no suitable solution.
 
 **MUST NOT:**
 - import or render Molecules, Organisms, Templates, or Pages;
 - import or render another application Atom;
-- access Zustand, state Hooks, Services, or APIs;
+- access Zustand, application-state Hooks, Services, or APIs;
 - contain business logic;
-- exist only to group other Atoms;
+- be created only to group other Atoms;
 - discover, create, or fetch external dependencies on its own.
+
+React-local mechanisms used solely for the Atom's own UI behavior, such as `useState`, `useReducer`, `useId`, `useRef`, or equivalent local React APIs, are **not** application-state access and are allowed when they are necessary for the Atom's own interaction.
 
 **Before creating an Atom, the agent MUST:**
 
@@ -60,13 +62,15 @@ A Molecule combines Atoms into a simple, coherent unit with one responsibility.
 **MUST:**
 - represent one small functional responsibility;
 - combine DS and/or application Atoms;
-- receive data and behavior through props/dependency injection when necessary.
+- receive external data and behavior through props/dependency injection when necessary.
 
 **MUST NOT:**
 - import or render Organisms, Templates, or Pages;
 - import or render another Molecule;
-- access Zustand directly, state Hooks, Services, or APIs;
+- access Zustand or application-state Hooks, Services, or APIs directly;
 - contain business logic.
+
+React-local state and local React Hooks are allowed when the state belongs exclusively to the Molecule's own UI interaction and does not represent shared/application state.
 
 A combination of Atoms **MUST ONLY be classified as a Molecule when it forms a coherent functional unit**. The number of Atoms alone **MUST NOT determine the layer**.
 
@@ -77,16 +81,18 @@ An Organism is a significant UI section composed of Molecules and/or Atoms.
 **MAY:**
 - use Molecules and Atoms directly;
 - skip the Molecule layer when there is no Molecule-level functional unit to represent;
-- own local state and interactions belonging to the section itself.
+- own local UI state and interactions belonging exclusively to the section itself.
 
 **MUST NOT:**
 - import or render another Organism;
 - import or render Templates or Pages;
-- access Zustand directly, state Hooks, Services, or APIs;
+- access Zustand or application-state Hooks, Services, or APIs directly;
 - contain business logic;
 - exist only as an arbitrary grouping of Atoms.
 
 If a group of Atoms forms a coherent, reusable functional unit, it **MUST** be extracted into a Molecule.
+
+Local React state is allowed only when it belongs exclusively to the Organism's own UI behavior. Shared/application state belongs outside the presentation layer according to the state rules.
 
 ### Template
 
@@ -95,14 +101,16 @@ A Template is responsible for the visual and structural composition of a page.
 **MUST:**
 - compose Organisms, Molecules, and/or Atoms;
 - skip lower levels only when necessary to represent the structure correctly;
-- represent a reusable page structure without depending on a concrete route or concrete data.
+- represent a reusable page structure without depending on a concrete route or concrete application data.
 
 **MUST NOT:**
 - import or render another Template;
-- access Zustand directly, state Hooks, Services, or APIs;
+- access Zustand, application-state Hooks, Services, or APIs directly;
 - contain business logic;
 - assume responsibilities specific to a Page;
 - decide which concrete route is active.
+
+Local React UI state is allowed only when it belongs exclusively to the Template's own structural interaction. Shared/application state is not local UI state.
 
 ### Page
 
@@ -190,6 +198,8 @@ Organism  → Template   ❌
 Atom      → Molecule   ❌
 ```
 
+The matrix applies to direct and indirect access. An indirect import, re-export, alias, wrapper, or intermediary component **MUST NOT** be used to obtain a dependency that would be forbidden directly.
+
 ## Reuse Before Creation
 
 Before creating any new component, the agent **MUST execute this sequence**:
@@ -197,7 +207,7 @@ Before creating any new component, the agent **MUST execute this sequence**:
 1. search the Design System;
 2. search existing components in the app;
 3. identify components with equivalent or closely related responsibility;
-4. inspect the candidate's API and contract;
+4. inspect the candidate's implementation and API/contract;
 5. evaluate direct reuse;
 6. evaluate composition of existing components;
 7. create something new only when no existing solution satisfies the requirement.
@@ -239,7 +249,8 @@ The agent **MUST NOT:**
 - move logic to another layer merely to bypass an import restriction;
 - rename a component to pretend it belongs to another layer;
 - create an artificial abstraction to evade a rule;
-- use indirect imports to access a forbidden layer.
+- use indirect imports, re-exports, aliases, or wrappers to access a forbidden layer;
+- move a dependency to a non-TSX file solely to bypass a TSX-layer restriction without preserving the same architectural boundary.
 
 ## Implementation Principle
 
