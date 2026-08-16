@@ -1,14 +1,14 @@
-# Regras de Arquitetura
+# Architecture Rules
 
-Este arquivo define **restrições obrigatórias de implementação**. Não são recomendações e não são apenas critérios de revisão.
+This file defines **mandatory implementation constraints**. These are not recommendations and are not merely review criteria.
 
-Quando uma regra deste arquivo se aplicar, o agente **DEVE** obedecê-la.
+When a rule in this file applies, the agent **MUST** obey it.
 
-A ausência de uma permissão explícita **NÃO autoriza uma exceção**.
+The absence of explicit permission **MUST NOT** be interpreted as permission to create an exception.
 
 ## Atomic Design
 
-A UI segue esta hierarquia:
+The UI follows this hierarchy:
 
 ```text
 Layout
@@ -24,110 +24,110 @@ Molecule
 Atom
 ```
 
-`Layout` é uma responsabilidade estrutural da aplicação e fica fora da hierarquia do Atomic Design.
+`Layout` is an application-structure responsibility and sits outside the Atomic Design hierarchy.
 
 ### Atom
 
-Um Atom é a menor unidade de UI com uma responsabilidade própria e única.
+An Atom is the smallest UI unit with one clear responsibility.
 
-**DEVE:**
-- representar uma responsabilidade visual/funcional única;
-- ser independente de negócio e infraestrutura;
-- receber dados e comportamentos por props/injeção quando necessário;
-- reutilizar um Atom do Design System quando o DS já resolver o requisito;
-- poder ser específico da aplicação quando o DS não possuir solução adequada.
+**MUST:**
+- represent one visual/functional responsibility;
+- remain independent of business logic and infrastructure;
+- receive data and behavior through props/dependency injection when necessary;
+- reuse a Design System Atom when the DS already satisfies the requirement;
+- be application-specific when the DS has no suitable solution.
 
-**NÃO PODE:**
-- importar ou renderizar Molecules, Organisms, Templates ou Pages;
-- importar ou renderizar outro Atom da aplicação;
-- acessar Zustand, Hooks de estado, Services ou APIs;
-- conter regra de negócio;
-- ser criado apenas para agrupar outros Atoms;
-- descobrir, criar ou buscar dependências externas por conta própria.
+**MUST NOT:**
+- import or render Molecules, Organisms, Templates, or Pages;
+- import or render another application Atom;
+- access Zustand, state Hooks, Services, or APIs;
+- contain business logic;
+- exist only to group other Atoms;
+- discover, create, or fetch external dependencies on its own.
 
-**Antes de criar um Atom, o agente DEVE:**
+**Before creating an Atom, the agent MUST:**
 
-1. pesquisar o Design System;
-2. pesquisar Atoms existentes no app;
-3. verificar se o requisito realmente é atômico;
-4. verificar se um componente existente pode ser reutilizado ou composto;
-5. criar o Atom somente se nenhuma solução adequada já existir.
+1. search the Design System;
+2. search existing Atoms in the app;
+3. verify that the requirement is actually atomic;
+4. verify whether an existing component can be reused or composed;
+5. create the Atom only when no suitable existing solution exists.
 
 ### Molecule
 
-Uma Molecule combina Atoms em uma unidade funcional simples, coerente e com responsabilidade única.
+A Molecule combines Atoms into a simple, coherent unit with one responsibility.
 
-**DEVE:**
-- representar uma responsabilidade funcional pequena e única;
-- combinar Atoms do DS e/ou da aplicação;
-- receber dados e comportamentos por props/injeção quando necessário.
+**MUST:**
+- represent one small functional responsibility;
+- combine DS and/or application Atoms;
+- receive data and behavior through props/dependency injection when necessary.
 
-**NÃO PODE:**
-- importar ou renderizar Organisms, Templates ou Pages;
-- importar ou renderizar outra Molecule;
-- acessar Zustand diretamente, Hooks de estado, Services ou APIs;
-- conter regra de negócio.
+**MUST NOT:**
+- import or render Organisms, Templates, or Pages;
+- import or render another Molecule;
+- access Zustand directly, state Hooks, Services, or APIs;
+- contain business logic.
 
-Uma combinação de Atoms **SÓ DEVE ser classificada como Molecule quando formar uma unidade funcional/coerente**. A quantidade de Atoms, sozinha, **NÃO determina a camada**.
+A combination of Atoms **MUST ONLY be classified as a Molecule when it forms a coherent functional unit**. The number of Atoms alone **MUST NOT determine the layer**.
 
 ### Organism
 
-Um Organism é uma seção significativa da UI composta por Molecules e/ou Atoms.
+An Organism is a significant UI section composed of Molecules and/or Atoms.
 
-**PODE:**
-- usar Molecules e Atoms diretamente;
-- pular a camada de Molecule quando não existir uma unidade funcional de Molecule a representar;
-- possuir estado e interação locais pertencentes à própria seção.
+**MAY:**
+- use Molecules and Atoms directly;
+- skip the Molecule layer when there is no Molecule-level functional unit to represent;
+- own local state and interactions belonging to the section itself.
 
-**NÃO PODE:**
-- importar ou renderizar outro Organism;
-- importar ou renderizar Templates ou Pages;
-- acessar Zustand diretamente, Hooks de estado, Services ou APIs;
-- conter regra de negócio;
-- existir apenas como agrupamento arbitrário de Atoms.
+**MUST NOT:**
+- import or render another Organism;
+- import or render Templates or Pages;
+- access Zustand directly, state Hooks, Services, or APIs;
+- contain business logic;
+- exist only as an arbitrary grouping of Atoms.
 
-Se um conjunto de Atoms formar uma unidade funcional coerente e reutilizável, ele **DEVE** ser extraído para uma Molecule.
+If a group of Atoms forms a coherent, reusable functional unit, it **MUST** be extracted into a Molecule.
 
 ### Template
 
-Template é a camada responsável pela composição visual e estrutural de uma página.
+A Template is responsible for the visual and structural composition of a page.
 
-**DEVE:**
-- compor Organisms, Molecules e/ou Atoms;
-- poder pular níveis inferiores quando isso for necessário para representar corretamente a estrutura;
-- representar uma estrutura de página reutilizável, sem depender de rota concreta ou dados concretos.
+**MUST:**
+- compose Organisms, Molecules, and/or Atoms;
+- skip lower levels only when necessary to represent the structure correctly;
+- represent a reusable page structure without depending on a concrete route or concrete data.
 
-**NÃO PODE:**
-- importar ou renderizar outro Template;
-- acessar Zustand diretamente, Hooks de estado, Services ou APIs;
-- conter regra de negócio;
-- assumir responsabilidades específicas de uma Page;
-- decidir qual rota concreta está ativa.
+**MUST NOT:**
+- import or render another Template;
+- access Zustand directly, state Hooks, Services, or APIs;
+- contain business logic;
+- assume responsibilities specific to a Page;
+- decide which concrete route is active.
 
 ### Page
 
-Page representa uma rota/contexto concreto da aplicação e é a **camada de governança da UI** daquela rota.
+A Page represents a concrete application route/context and is the **UI governance layer** for that route.
 
-**DEVE:**
-- coordenar contexto, estado, dados e dependências da página;
-- utilizar **exatamente um Template como sua camada de composição visual**;
-- passar ao Template os dados, ações e dependências necessários.
+**MUST:**
+- coordinate page context, state, data, and dependencies;
+- use **exactly one Template as its visual composition layer**;
+- pass the Template the required data, actions, and dependencies.
 
-**NÃO PODE:**
-- importar, renderizar ou compor diretamente Organisms, Molecules ou Atoms;
-- implementar composição visual que pertence ao Template;
-- transformar-se em componente visual monolítico;
-- escolher manualmente componentes visuais abaixo de Template;
-- renderizar múltiplos Templates como alternativa para substituir a composição de um Template adequado.
+**MUST NOT:**
+- import, render, or directly compose Organisms, Molecules, or Atoms;
+- implement visual composition that belongs to the Template;
+- become a monolithic visual component;
+- manually choose visual components below the Template;
+- render multiple Templates as a workaround for avoiding the composition of a suitable Template.
 
-**Permitido:**
+**Allowed:**
 
 ```tsx
 // ✅ Page → Template
 return <UserTemplate user={user} onSelect={handleSelect} />
 ```
 
-**Proibido:**
+**Forbidden:**
 
 ```tsx
 // ❌ Page → Organism
@@ -141,41 +141,41 @@ return <UserSearch />
 
 ```tsx
 // ❌ Page → Atom
-return <Button onClick={handleClick}>Salvar</Button>
+return <Button onClick={handleClick}>Save</Button>
 ```
 
 ## Layout
 
-Layout é uma camada estrutural externa ao Atomic Design.
+Layout is a structural layer outside Atomic Design.
 
-**DEVE:**
-- fornecer o chrome persistente da aplicação;
-- envolver Pages;
-- controlar estrutura compartilhada como header, sidebar, navegação e áreas persistentes;
-- usar o mecanismo de composição de rota da aplicação para renderizar a Page ativa.
+**MUST:**
+- provide the application's persistent chrome;
+- wrap Pages;
+- control shared structure such as header, sidebar, navigation, and persistent content areas;
+- use the application's route-composition mechanism to render the active Page.
 
-**NÃO PODE:**
-- implementar composição visual específica de uma Page;
-- importar e escolher manualmente qual Page está ativa;
-- conter regra de negócio específica de uma rota;
-- depender de detalhes internos de uma Page específica.
+**MUST NOT:**
+- implement Page-specific visual composition;
+- manually import and choose which Page is active;
+- contain route-specific business logic;
+- depend on internal details of a specific Page.
 
-## Matriz de dependências
+## Dependency Matrix
 
-As únicas dependências de composição de UI permitidas são:
+The only permitted UI composition dependencies are:
 
 ```text
 Page       → Template
 Template   → Organism | Molecule | Atom
 Organism   → Molecule | Atom
 Molecule   → Atom
-Atom       → nenhuma camada de UI
+Atom       → no UI layer
 Layout     → Page
 ```
 
-Qualquer dependência de UI fora dessa matriz é **PROIBIDA**.
+Any UI dependency outside this matrix is **FORBIDDEN**.
 
-Em particular:
+In particular:
 
 ```text
 Page      → Organism   ❌
@@ -190,61 +190,61 @@ Organism  → Template   ❌
 Atom      → Molecule   ❌
 ```
 
-## Reutilização antes de criação
+## Reuse Before Creation
 
-Antes de criar qualquer novo componente, o agente **DEVE executar esta sequência**:
+Before creating any new component, the agent **MUST execute this sequence**:
 
-1. procurar no Design System;
-2. procurar componentes existentes no app;
-3. identificar componentes com responsabilidade equivalente ou próxima;
-4. verificar a API e o contrato do candidato;
-5. avaliar reutilização direta;
-6. avaliar composição dos componentes existentes;
-7. só então criar algo novo se nenhuma solução existente atender ao requisito.
+1. search the Design System;
+2. search existing components in the app;
+3. identify components with equivalent or closely related responsibility;
+4. inspect the candidate's API and contract;
+5. evaluate direct reuse;
+6. evaluate composition of existing components;
+7. create something new only when no existing solution satisfies the requirement.
 
-Criar um componente semanticamente duplicado quando uma solução adequada já existe é **PROIBIDO**.
+Creating a semantically duplicated component when a suitable solution already exists is **FORBIDDEN**.
 
-## Regra de decisão antes de escrever TSX
+## Decision Gate Before Writing TSX
 
-Antes de escrever um novo TSX, o agente **DEVE conseguir responder**:
+Before writing a new TSX file, the agent **MUST be able to answer**:
 
-1. Qual é a responsabilidade deste componente?
-2. Qual é sua camada no Atomic Design?
-3. Qual é o caminho de dependência permitido para essa camada?
-4. Quais componentes existentes foram avaliados?
-5. Qual solução do Design System foi avaliada?
-6. Por que uma nova unidade é necessária?
+1. What is this component's responsibility?
+2. Which Atomic Design layer does it belong to?
+3. What dependency path is allowed for that layer?
+4. Which existing components were evaluated?
+5. Which Design System solution was evaluated?
+6. Why is a new unit necessary?
 
-Se qualquer resposta necessária não puder ser determinada com segurança, o agente **NÃO DEVE inventar uma solução**. Deve continuar investigando ou reportar a ambiguidade.
+If any required answer cannot be determined with sufficient confidence, the agent **MUST NOT invent a solution**. It must continue investigating or report the ambiguity.
 
-## Regra de classificação
+## Classification Rule
 
-A camada deve ser determinada pela **responsabilidade do componente**, não pela conveniência de implementação.
+The layer **MUST be determined by the component's responsibility**, not by implementation convenience.
 
-É **PROIBIDO** escolher uma camada apenas para permitir uma importação que seria proibida na camada correta.
+It is **FORBIDDEN** to choose a layer solely to allow an import that would be forbidden in the correct layer.
 
-Exemplo:
+Example:
 
 ```text
-"Preciso de um componente que só poderia importar Organism."
+"I need a component that can only import an Organism."
             ↓
-NÃO é permitido elevar o componente artificialmente só para liberar o import.
+The component MUST NOT be promoted to a higher layer just to allow the import.
 ```
 
-## Regra de não contorno
+## No-Workaround Rule
 
-O agente **NÃO PODE**:
+The agent **MUST NOT:**
 
-- criar um componente intermediário vazio apenas para satisfazer a hierarquia;
-- mover lógica para outra camada apenas para contornar uma restrição de importação;
-- renomear um componente para fingir que ele pertence a outra camada;
-- criar uma abstração artificial para evitar uma regra;
-- usar imports indiretos para acessar uma camada proibida.
+- create an empty intermediate component merely to satisfy the hierarchy;
+- move logic to another layer merely to bypass an import restriction;
+- rename a component to pretend it belongs to another layer;
+- create an artificial abstraction to evade a rule;
+- use indirect imports to access a forbidden layer.
 
-## Princípio de implementação
+## Implementation Principle
 
-Estas regras governam a criação e edição do código desde o início da tarefa.
+These rules govern code creation and editing from the beginning of the task.
 
-Elas **NÃO devem ser tratadas como checklist para auditoria posterior**.
+They **MUST NOT** be treated as a checklist reserved for a later audit.
 
-Quando uma regra puder ser verificada mecanicamente, ela **DEVE** ser protegida por enforcement automático.
+Whenever a rule can be verified mechanically, it **MUST** be protected by automated enforcement.
