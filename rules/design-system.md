@@ -1,208 +1,208 @@
-# Regras do Design System
+# Design System Rules
 
-Este arquivo define **restrições obrigatórias para qualquer implementação de UI**.
+This file defines **mandatory constraints for any UI implementation**.
 
-## Fonte oficial
+## Official Source
 
-O Design System do `nino-app` está em:
+The `nino-app` Design System is located at:
 
 ```text
 packages/ds/src/components/
 ```
 
-Esse código é a **fonte oficial** para reutilização de componentes de UI.
+This code is the **official source of truth** for UI component reuse.
 
-O DS atualmente contém, entre outros, componentes como `Button`, `Dialog`, `Card`, `Input`, `Label`, `Toast`, `Alert`, `Switch`, `Slider`, `Drawer`, `Select`, `Avatar`, `Popover`, `Spinner`, `Tabs`, `Menu`, `Table`, `Badge`, `Tooltip` e `Stepper`.
+The DS currently contains, among others, components such as `Button`, `Dialog`, `Card`, `Input`, `Label`, `Toast`, `Alert`, `Switch`, `Slider`, `Drawer`, `Select`, `Avatar`, `Popover`, `Spinner`, `Tabs`, `Menu`, `Table`, `Badge`, `Tooltip`, and `Stepper`.
 
-A lista acima é apenas ilustrativa. **O código real do DS sempre tem precedência sobre memória ou exemplos desta documentação.**
+The list above is illustrative only. **The current DS source code always takes precedence over memory or documentation examples.**
 
-## Regra DS-first
+## DS-First Rule
 
-O Design System é **DS-first, não DS-only**.
+The Design System is **DS-first, not DS-only**.
 
-Antes de criar, editar ou substituir qualquer UI própria, o agente **DEVE** seguir esta ordem:
+Before creating, editing, or replacing any application UI, the agent **MUST** follow this order:
 
-1. localizar a área correspondente do Design System;
-2. pesquisar componentes candidatos por nome e responsabilidade;
-3. inspecionar a implementação e os tipos/props dos candidatos relevantes;
-4. determinar se algum candidato atende ao requisito;
-5. reutilizar o componente do DS quando ele atender;
-6. somente depois considerar uma implementação específica da aplicação.
+1. locate the relevant area of the Design System;
+2. search for candidate components by name and responsibility;
+3. inspect the implementation and relevant types/props of plausible candidates;
+4. determine whether a candidate satisfies the requirement;
+5. reuse the DS component when it satisfies the requirement;
+6. only then consider an application-specific implementation.
 
-**É PROIBIDO criar uma implementação própria antes de concluir a pesquisa necessária do DS.**
+**It is FORBIDDEN to create a custom implementation before completing the required DS investigation.**
 
-## O que significa "atende ao requisito"
+## What "Satisfies the Requirement" Means
 
-Um componente do DS é considerado adequado quando ele atende ao **comportamento e à responsabilidade solicitados** sem exigir uma adaptação que destrua seu contrato, semântica ou finalidade.
+A DS component is suitable when it satisfies the **requested behavior and responsibility** without requiring an adaptation that breaks its contract, semantics, or intended purpose.
 
-Diferença visual pequena, preferência estética ou preferência pessoal do agente **NÃO são justificativas suficientes** para abandonar um componente existente do DS.
+A small visual difference, aesthetic preference, or personal preference of the agent **is NOT sufficient justification** for abandoning an existing DS component.
 
-Uma necessidade funcional que o componente do DS não suporta de forma compatível **PODE justificar composição ou uma implementação local**, respeitando as regras de arquitetura.
+A functional requirement that the DS component cannot support compatibly **MAY justify composition or a local implementation**, subject to the architecture rules.
 
-## Não duplicar o DS
+## Do Not Duplicate the DS
 
-É **PROIBIDO** criar no app uma implementação semanticamente equivalente a um componente do DS quando o componente existente atende ao requisito.
+It is **FORBIDDEN** to create an application implementation that is semantically equivalent to an existing DS component when that component satisfies the requirement.
 
-Exemplos:
+Examples:
 
 ```tsx
-// ❌ recriar um Button do DS
-<button className="...">Salvar</button>
+// ❌ recreate a DS Button
+<button className="...">Save</button>
 ```
 
 ```tsx
-// ❌ criar um equivalente local de Button sem necessidade real
+// ❌ create a local equivalent of Button without a real need
 function SaveButton() {
-  return <button>Salvar</button>
+  return <button>Save</button>
 }
 ```
 
-Outro exemplo conceitual:
+Conceptual example:
 
 ```text
-DS já fornece Select
+DS already provides Select
         ↓
-criar LocalSelect com a mesma responsabilidade
+create LocalSelect with the same responsibility
         ↓
-❌ PROIBIDO
+❌ FORBIDDEN
 ```
 
-## DS-first não significa DS-forçado
+## DS-First Does Not Mean DS-Forced
 
-Não force o uso de um componente do DS quando ele **não atende ao requisito real**.
+Do not force a DS component when it **does not satisfy the actual requirement**.
 
-Quando o DS não fornecer uma solução adequada:
+When the DS has no suitable solution:
 
-- um componente específico da aplicação **PODE** ser criado;
-- ele **DEVE** obedecer às regras do Atomic Design;
-- a ausência de solução adequada no DS é a justificativa para a criação local;
-- preferência pessoal, conveniência ou desconhecimento do DS **NÃO são justificativas**.
+- an application-specific component **MAY** be created;
+- it **MUST** follow the Atomic Design rules;
+- the lack of a suitable DS solution is the justification for creating it locally;
+- personal preference, convenience, or lack of knowledge of the DS **is NOT justification**.
 
-## Composição antes de duplicação
+## Composition Before Duplication
 
-Se o DS não resolver sozinho, o agente **DEVE avaliar composição antes de duplicar implementação**.
+When the DS does not solve the requirement by itself, the agent **MUST evaluate composition before duplicating an implementation**.
 
-Exemplo:
+Example:
 
 ```text
-DS Button + comportamento específico
+DS Button + application-specific behavior
         ↓
-compor o Button
+compose the Button
         ✅
 
-recriar Button localmente
+recreate Button locally
         ❌
 ```
 
-A composição deve adicionar responsabilidade real. Um wrapper sem responsabilidade própria, criado apenas para reproduzir a API/estilo do DS, é suspeito e deve ser evitado.
+Composition must add real responsibility. A wrapper with no meaningful responsibility, created only to reproduce the DS API/style, is suspect and should be avoided.
 
-## Descoberta do DS
+## DS Discovery
 
-O agente **NÃO PODE assumir que um componente não existe**.
+The agent **MUST NOT assume that a component does not exist**.
 
-Também é proibido concluir "o DS não possui" baseado apenas em:
+It is also forbidden to conclude that "the DS does not have it" based only on:
 
-- memória do modelo;
-- um único nome pesquisado;
-- uma busca superficial;
-- inspeção de um arquivo diferente;
-- documentação antiga sem confirmação no código atual.
+- model memory;
+- a single searched name;
+- a superficial search;
+- inspection of an unrelated file;
+- old documentation without confirmation in the current source.
 
-Quando houver candidato plausível, o agente **DEVE ler a implementação e/ou tipos relevantes antes de descartá-lo**.
+When a plausible candidate exists, the agent **MUST inspect its implementation and/or relevant types before rejecting it**.
 
-## Evidência da decisão
+## Decision Evidence
 
-Para qualquer componente UI novo ou substituição de componente, o agente deve conseguir identificar:
+For any new UI component or component replacement, the agent must be able to identify:
 
 ```text
-1. o requisito solicitado;
-2. os componentes do DS considerados;
-3. o candidato escolhido, se houver;
-4. por que ele atende;
-5. ou qual lacuna real impediu seu uso.
+1. the requested requirement;
+2. the DS components considered;
+3. the selected candidate, if any;
+4. why it satisfies the requirement;
+5. or which concrete gap prevented its reuse.
 ```
 
-Se uma implementação local for criada porque o DS não atende, **a razão deve ser específica e verificável**, não uma frase genérica como "não se encaixa".
+If a local implementation is created because the DS does not satisfy the requirement, **the reason MUST be specific and verifiable**, not a generic statement such as "it does not fit".
 
-## Imports do DS
+## DS Imports
 
-Quando o projeto possuir uma API pública/padrão de importação para o DS, o agente **DEVE usar essa API**.
+When the project exposes a public/official import API for the DS, the agent **MUST use that API**.
 
-É **PROIBIDO** acessar arquivos internos do DS por caminhos profundos quando existir uma entrada pública destinada ao consumidor.
+It is **FORBIDDEN** to access internal DS files through deep paths when a public consumer entry point exists.
 
-Exemplo conceitual:
+Conceptual example:
 
 ```tsx
-// ✅ API pública do DS
+// ✅ public DS API
 import { Button } from '@ds/components/Button'
 
-// ❌ caminho interno arbitrário, se não for API pública
+// ❌ arbitrary internal path when not a public API
 import { Button } from '@ds/components/Button/Button'
 ```
 
-A implementação real do repositório é a autoridade para determinar qual caminho é oficial.
+The actual repository implementation is authoritative for determining the official import path.
 
-## Não alterar o DS por conveniência
+## Do Not Modify the DS for Convenience
 
-Durante uma tarefa normal de UI de uma aplicação consumidora:
+During a normal UI task for a consuming application:
 
-- **NÃO criar novos componentes em `packages/ds`** apenas para resolver uma necessidade local;
-- **NÃO alterar um componente existente do DS** apenas para atender uma necessidade específica do app sem uma tarefa explícita para isso;
-- **NÃO introduzir API nova no DS silenciosamente**.
+- **DO NOT create new components in `packages/ds`** merely to solve a local application need;
+- **DO NOT modify an existing DS component** merely to satisfy an application-specific need unless the task explicitly requests it;
+- **DO NOT introduce new DS APIs silently**.
 
-Uma mudança no Design System é uma mudança de escopo/arquitetura e deve ser explícita.
+A Design System change is an explicit scope/architecture change and must be requested explicitly.
 
-## Procedimento obrigatório para criação de UI
+## Mandatory UI Creation Procedure
 
-Antes de escrever TSX de UI, o agente **DEVE** completar:
+Before writing UI TSX, the agent **MUST complete**:
 
 ```text
-[ ] Requisito da UI identificado
-[ ] DS pesquisado
-[ ] Candidato(s) relevante(s) inspecionado(s)
-[ ] Composição avaliada
-[ ] Componente existente do app pesquisado
-[ ] Decisão DS vs. local tomada
-[ ] Camada Atomic Design definida
-[ ] Só então: implementação
+[ ] UI requirement identified
+[ ] DS searched
+[ ] Relevant candidate(s) inspected
+[ ] Composition evaluated
+[ ] Existing application components searched
+[ ] DS vs. local decision made
+[ ] Atomic Design layer determined
+[ ] Only then: implementation
 ```
 
-**Não pule uma etapa relevante para acelerar a tarefa.**
+**DO NOT skip a relevant step to accelerate the task.**
 
-## Verificação antes de concluir
+## Verification Before Completion
 
-Antes de concluir uma tarefa de UI, o agente **DEVE verificar**:
+Before completing a UI task, the agent **MUST verify**:
 
-- se uma implementação própria duplicou algo que o DS já fornecia;
-- se o componente do DS utilizado corresponde ao requisito real;
-- se os imports seguem a API oficial;
-- se qualquer decisão de não reutilização do DS possui justificativa concreta;
-- se a solução criada respeita as regras de arquitetura.
+- whether the custom implementation duplicated something already provided by the DS;
+- whether the DS component used actually matches the requirement;
+- whether imports follow the official API;
+- whether any decision not to reuse the DS has a concrete justification;
+- whether the resulting solution follows the architecture rules.
 
-Passar em testes ou lint **não prova sozinho** que a regra DS-first foi cumprida.
+Passing tests or lint **does not by itself prove** that the DS-first rule was followed.
 
 ## Enforcement
 
-Regras objetivas devem ser protegidas por mecanismos automáticos sempre que possível.
+Objective rules should be protected by automated mechanisms whenever possible.
 
-### Enforcement mínimo esperado
+### Minimum Expected Enforcement
 
-1. **Imports:** detectar caminhos de import proibidos e imports do DS fora da API oficial.
-2. **Catálogo:** manter uma representação machine-readable dos componentes do DS, seus imports oficiais e responsabilidade.
-3. **Duplicação objetiva:** detectar recriações claras de primitivas/componentes do DS.
-4. **Arquitetura:** verificar se componentes de camadas proibidas estão recriando componentes do DS em vez de reutilizá-los.
-5. **Bloqueio:** uma violação objetiva deve fazer o check falhar.
+1. **Imports:** detect forbidden DS import paths and DS imports outside the official API.
+2. **Catalog:** maintain a machine-readable representation of DS components, official imports, and responsibilities.
+3. **Objective duplication:** detect clear local recreations of DS primitives/components.
+4. **Architecture:** detect prohibited-layer implementations that recreate DS components instead of reusing them.
+5. **Blocking:** an objective violation MUST fail the check.
 
-A mensagem de falha deve informar, quando possível:
+Where possible, failure output should include:
 
-- arquivo;
-- linha;
-- regra violada;
-- componente do DS esperado;
-- caminho oficial de import.
+- file;
+- line;
+- violated rule;
+- expected DS component;
+- official import path.
 
-O agente **DEVE corrigir a causa**. É **PROIBIDO desabilitar ou enfraquecer o check** para permitir a alteração.
+The agent **MUST fix the cause**. It is **FORBIDDEN to disable or weaken the check** to allow the change.
 
-## Regra final
+## Final Rule
 
-> **Pesquisar o Design System é obrigatório antes de qualquer criação ou substituição de UI. Reutilizar uma solução adequada é obrigatório. Criar algo próprio exige uma lacuna real e verificável do DS.**
+> **Searching the Design System is mandatory before creating or replacing any UI. Reusing a suitable existing solution is mandatory. Creating a custom solution requires a real, verifiable gap in the DS.**
