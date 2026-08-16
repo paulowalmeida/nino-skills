@@ -24,11 +24,27 @@ Atom
 
 ### Atoms
 
-- Unidades básicas de UI.
-- Podem vir do Design System ou ser específicos da aplicação consumidora.
-- Não possuem lógica de negócio.
-- Não acessam API/Service.
-- Não podem depender de níveis superiores do Atomic Design.
+**Definição:** Atom é a menor unidade de UI com responsabilidade própria.
+
+- Pode vir do Design System ou ser específico da aplicação consumidora.
+- Deve representar uma responsabilidade visual/funcional única.
+- Deve receber dados e comportamentos por props/injeção quando necessário.
+- Não possui lógica de negócio.
+- Não acessa API, Service ou Zustand.
+- Não importa nem compõe Molecules, Organisms, Templates ou Pages.
+- Não depende de outro componente da mesma camada.
+- Não deve ser criado apenas para agrupar outros Atoms.
+
+Antes de criar um Atom, o agente deve:
+
+1. Procurar no Design System uma solução adequada.
+2. Procurar componentes existentes na aplicação com responsabilidade equivalente.
+3. Verificar se o requisito realmente representa uma unidade atômica.
+4. Criar um novo Atom somente quando não houver uma solução adequada para reutilizar ou compor.
+
+**Regra para o agente:**
+
+> Um Atom **NÃO DEVE** importar ou utilizar outro componente da mesma camada, nem qualquer componente de nível superior. Um Atom **NÃO DEVE** acessar Zustand, Services, APIs ou lógica de negócio.
 
 ### Molecules
 
