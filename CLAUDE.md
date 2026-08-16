@@ -1,165 +1,165 @@
-# Nino — Regras do Agente
+# Nino — Agent Rules
 
-Este arquivo é o **contrato operacional obrigatório do agente**. Ele existe para reduzir decisões improvisadas, desvios de arquitetura e alegações sem evidência.
+This file is the agent's **mandatory operational contract**. Its purpose is to reduce improvisation, architectural drift, and unsupported claims.
 
-## Regra fundamental
+## Fundamental rule
 
-O agente **DEVE implementar de acordo com as regras do projeto desde o primeiro passo da tarefa**.
+The agent **MUST implement according to the project's rules from the first step of the task**.
 
-As regras **NÃO são uma checklist de auditoria posterior**.
+The rules are **NOT a checklist for a post-implementation audit**.
 
-O agente **NÃO DEVE editar primeiro e tentar conformar depois**.
+The agent **MUST NOT edit first and attempt to conform afterward**.
 
-## Hierarquia de autoridade
+## Authority hierarchy
 
-1. **Instruções explícitas do usuário** têm prioridade, desde que não violem regras superiores do sistema/plataforma.
-2. `rules/` define as regras permanentes do projeto.
-3. Skills definem procedimentos obrigatórios para tipos específicos de tarefa.
-4. Hooks, linters, testes, AST checks e outras verificações automáticas são enforcement e **NÃO DEVEM ser contornados**.
+1. **Explicit user instructions** have priority, provided they do not violate higher-level system/platform constraints.
+2. `rules/` defines the project's permanent rules.
+3. Skills define mandatory procedures for specific task types.
+4. Hooks, linters, tests, AST checks, and other automated checks are enforcement mechanisms and **MUST NOT be bypassed**.
 
-Se houver conflito entre regras do projeto e não existir uma prioridade explícita:
+If project rules conflict and no explicit precedence exists:
 
-- **NÃO invente uma resolução**;
-- **NÃO escolha arbitrariamente a regra que parece mais conveniente**;
-- pare a implementação e identifique o conflito.
+- **DO NOT invent a resolution**;
+- **DO NOT arbitrarily choose the more convenient rule**;
+- stop implementation and identify the conflict.
 
-## Preflight obrigatório antes de qualquer alteração
+## Mandatory preflight before any change
 
-Antes de qualquer `Write`, `Edit`, criação, remoção, renomeação ou movimentação de arquivo, o agente **DEVE concluir mentalmente e na prática** estas etapas, na ordem:
+Before any `Write`, `Edit`, file creation, deletion, rename, or move, the agent **MUST complete these steps, in order**:
 
-1. **Entender a solicitação:** identificar exatamente o que deve mudar e o que não foi solicitado.
-2. **Identificar as regras aplicáveis:** localizar os arquivos de `rules/` e Skills relevantes para o tipo de tarefa e os caminhos afetados.
-3. **Ler as regras aplicáveis:** não basta localizar o arquivo; as regras relevantes precisam ser realmente lidas antes da decisão de implementação.
-4. **Inspecionar o código existente:** ler o contexto necessário dos arquivos que serão modificados e dos componentes/camadas diretamente relacionados.
-5. **Pesquisar soluções existentes:** procurar componentes, Hooks, Services, utilitários, padrões e APIs já existentes antes de criar qualquer alternativa.
-6. **Para UI, pesquisar obrigatoriamente o Design System primeiro.**
-7. **Determinar a responsabilidade e a camada correta** antes de criar ou mover código.
-8. **Somente depois implementar.**
+1. **Understand the request:** identify exactly what must change and what was not requested.
+2. **Identify applicable rules:** locate the relevant files under `rules/` and the Skills applicable to the task type and affected paths.
+3. **Read applicable rules:** locating a file is not enough; the relevant rules MUST actually be read before implementation decisions are made.
+4. **Inspect existing code:** read the necessary context from files being modified and from directly related components/layers.
+5. **Search for existing solutions:** look for existing components, Hooks, Services, utilities, patterns, and APIs before creating alternatives.
+6. **For UI, MUST search the Design System first.**
+7. **Determine the correct responsibility and architectural layer** before creating or moving code.
+8. **Only then implement.**
 
-Se uma etapa relevante não puder ser concluída com confiança, **NÃO invente**. Continue a investigação ou reporte a limitação/conflito.
+If a relevant step cannot be completed with confidence, **DO NOT invent an answer**. Continue investigating or report the limitation/conflict.
 
-## Regras de implementação
+## Implementation rules
 
-Durante a implementação, o agente:
+During implementation, the agent:
 
-- **DEVE seguir as regras aplicáveis continuamente**;
-- **NÃO DEVE usar preferência pessoal como justificativa para violar um padrão existente**;
-- **NÃO DEVE criar uma segunda solução quando já existir uma solução adequada**;
-- **NÃO DEVE introduzir abstrações, bibliotecas, padrões ou estruturas novas sem necessidade comprovada pela tarefa**;
-- **NÃO DEVE criar exceções arquiteturais silenciosas**;
-- **NÃO DEVE transformar uma exceção específica da tarefa em regra geral do projeto**;
-- quando a regra e a solução desejada pelo agente entrarem em conflito, a regra vence.
+- **MUST continuously follow the applicable rules**;
+- **MUST NOT use personal preference as justification for violating an established project standard**;
+- **MUST NOT create a second solution when an adequate existing solution already exists**;
+- **MUST NOT introduce new abstractions, libraries, patterns, or structures without a demonstrated need for the task**;
+- **MUST NOT create silent architectural exceptions**;
+- **MUST NOT turn a task-specific exception into a general project rule**;
+- when the agent's preferred solution conflicts with a project rule, the project rule wins.
 
-## Escopo fechado
+## Closed scope
 
-Faça **somente o que a tarefa solicita e o que for estritamente necessário para executá-la corretamente**.
+Do **ONLY what the task requests and what is strictly necessary to complete it correctly**.
 
-É **PROIBIDO**:
+The following are **PROHIBITED**:
 
-- refatoração oportunista;
-- limpeza de código não relacionada;
-- reorganização de arquivos por preferência;
-- renomeação fora do escopo;
-- troca de biblioteca sem necessidade;
-- alteração de comportamento não solicitado;
-- criação de abstração "para o futuro" sem necessidade atual;
-- correção de problemas não relacionados encontrados durante a tarefa, salvo quando forem impedimento direto para concluir o pedido.
+- opportunistic refactoring;
+- unrelated cleanup;
+- file reorganization based on preference;
+- renaming outside the requested scope;
+- library replacement without necessity;
+- unrelated behavior changes;
+- abstractions created "for the future" without a current requirement;
+- fixing unrelated problems discovered during the task, unless they directly block completion.
 
-A ausência de uma solicitação explícita deve ser tratada como **proibição de alteração**, salvo quando a alteração adicional for tecnicamente indispensável para cumprir o pedido.
+The absence of an explicit request MUST be treated as **permission denied for changes**, unless the additional change is technically indispensable to fulfill the request.
 
-## Enforcement — falha deve provocar correção
+## Enforcement — failure must trigger correction
 
-Quando um hook, lint, teste, AST check ou outra verificação bloquear uma alteração:
+When a hook, lint, test, AST check, or other automated check blocks a change:
 
-1. **Leia a mensagem completa da violação.**
-2. Identifique exatamente qual regra foi violada.
-3. Corrija a implementação respeitando a regra.
-4. Execute novamente a verificação relevante.
-5. Repita até passar ou até existir um conflito real que impeça a conclusão.
+1. **Read the complete violation message.**
+2. Identify exactly which rule was violated.
+3. Correct the implementation while respecting the rule.
+4. Run the relevant check again.
+5. Repeat until it passes or until a real conflict prevents completion.
 
-É **PROIBIDO**:
+The following are **PROHIBITED**:
 
-- desabilitar o check;
-- diminuir sua severidade;
-- editar a configuração para esconder a violação;
-- adicionar exceção apenas para fazer a alteração passar;
-- ignorar a falha sem reportá-la.
+- disabling the check;
+- lowering its severity;
+- editing configuration to hide the violation;
+- adding an exception solely to make the change pass;
+- ignoring the failure without reporting it.
 
-## Busca não é inspeção
+## Search is not inspection
 
-`grep`, `rg`, `find`, buscas no editor e ferramentas equivalentes são ferramentas de **localização**.
+`grep`, `rg`, `find`, editor searches, and equivalent tools are **location tools**.
 
-Uma busca:
+A search:
 
-- **NÃO prova** que um arquivo foi lido;
-- **NÃO prova** que um diretório inteiro foi auditado;
-- **NÃO prova** que uma arquitetura inteira está correta;
-- **NÃO pode** ser usada como justificativa para afirmar que "não existe" algo sem cobertura adequada.
+- **DOES NOT prove** that a file was read;
+- **DOES NOT prove** that an entire directory was audited;
+- **DOES NOT prove** that an architecture is correct;
+- **MUST NOT** be used as justification for claiming that something does not exist without adequate coverage.
 
-Quando a tarefa exigir inspeção completa, o agente **DEVE determinar o conjunto de arquivos relevantes e inspecionar cada um**.
+When a task requires complete inspection, the agent **MUST determine the complete relevant file set and inspect each required file**.
 
-O agente **NÃO DEVE declarar** "li tudo", "auditado", "não há erros" ou equivalentes quando a inspeção foi parcial.
+The agent **MUST NOT claim** "I read everything," "audited it," "there are no errors," or equivalent statements when inspection was partial.
 
-## Evidência e alegações
+## Evidence and claims
 
-O agente **DEVE distinguir descoberta de conclusão**.
+The agent **MUST distinguish discovery from conclusion**.
 
-Exemplos:
+Examples:
 
-- encontrar um nome em `grep` = localização;
-- ler o arquivo e seu contexto = inspeção;
-- executar um teste = evidência daquele teste;
-- executar lint = evidência das regras cobertas pelo lint;
-- passar por um check = evidência apenas do que aquele check realmente verifica.
+- finding a name with `grep` = location evidence;
+- reading the file and its context = inspection evidence;
+- running a test = evidence for that test;
+- running lint = evidence for the rules covered by that lint;
+- passing a check = evidence only for what that check actually verifies.
 
-**Nunca generalize o resultado de uma verificação além do que ela realmente comprovou.**
+**Never generalize the result of a verification beyond what it actually proved.**
 
-## Verificação obrigatória antes de concluir
+## Mandatory verification before completion
 
-Antes de afirmar que a tarefa está concluída, o agente **DEVE**:
+Before stating that the task is complete, the agent **MUST**:
 
-1. revisar cada requisito explícito do usuário, individualmente;
-2. revisar os arquivos alterados e confirmar que a mudança corresponde ao pedido;
-3. verificar as regras arquiteturais aplicáveis;
-4. executar os testes/checks relevantes disponíveis;
-5. analisar os resultados, não apenas sua existência/ausência;
-6. verificar o diff final para detectar alterações não solicitadas;
-7. informar limitações quando alguma verificação necessária não puder ser realizada.
+1. review every explicit user requirement individually;
+2. review the changed files and confirm that the changes match the request;
+3. verify the applicable architectural rules;
+4. run the relevant available tests/checks;
+5. analyze the results, not merely whether output exists or errors are absent;
+6. inspect the final diff for unintended changes;
+7. report limitations when a required verification cannot be performed reliably.
 
-**Passar em testes não substitui a verificação dos requisitos do usuário.**
+**Passing tests does not replace verification of the user's requirements.**
 
-**Não declarar sucesso sem evidência suficiente.**
+**Do not claim success without sufficient evidence.**
 
-## Modo fail-closed
+## Fail-closed mode
 
-Quando faltar informação crítica para uma decisão arquitetural, o comportamento padrão é:
+When critical information is missing for an architectural decision, the default behavior is:
 
-> **Investigue antes de editar.**
+> **Investigate before editing.**
 
-Não é permitido usar como justificativa:
+The following are not valid justifications for making an unsupported decision:
 
-- "provavelmente";
-- "deve existir";
-- "parece correto";
-- "é uma abordagem mais simples";
-- "é provavelmente o padrão do projeto".
+- "probably";
+- "it should exist";
+- "it looks correct";
+- "this is simpler";
+- "this is probably the project standard".
 
-Quando a informação puder ser obtida no repositório, **obtenha-a antes de decidir**.
+When the information can be obtained from the repository, **obtain it before deciding**.
 
-## Proibições gerais
+## General prohibitions
 
-O agente **NÃO DEVE**:
+The agent **MUST NOT**:
 
-- ignorar regras porque estão em outro arquivo;
-- tratar uma regra como opcional apenas porque não existe enforcement automático;
-- substituir regra de projeto por preferência pessoal;
-- afirmar conformidade sem evidência suficiente;
-- considerar uma implementação "boa o bastante" quando existe violação explícita;
-- inventar API, componente, padrão, estrutura ou exceção para preencher lacunas sem investigação;
-- editar código com base apenas em memória quando a verdade pode ser consultada no repositório.
+- ignore rules because they are stored in another file;
+- treat a rule as optional merely because automated enforcement does not exist yet;
+- replace a project rule with personal preference;
+- claim compliance without sufficient evidence;
+- accept an implementation as "good enough" when it violates an explicit rule;
+- invent an API, component, pattern, structure, or exception to fill an information gap without investigation;
+- edit code based only on memory when the source of truth can be consulted in the repository.
 
-## Princípio final
+## Final principle
 
-**Primeiro investigar. Depois decidir. Depois implementar. Depois verificar.**
+**Investigate first. Decide second. Implement third. Verify fourth.**
 
-Nunca inverter essa ordem quando a etapa anterior for necessária para executar a tarefa corretamente.
+Never reverse this order when the preceding step is necessary to perform the task correctly.
