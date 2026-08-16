@@ -1,15 +1,15 @@
-# TSX Architecture — Fonte de Verdade
+# TSX Architecture — Reference
 
-> **Este arquivo não é mais a fonte de verdade das regras de TSX.**
+> **This file is no longer the normative source of truth for TSX rules.**
 
-As regras normativas foram consolidadas nos arquivos abaixo:
+The normative rules are consolidated in:
 
-- [`rules/architecture.md`](rules/architecture.md) — Atomic Design, Layout, Pages, Templates e dependências.
-- [`rules/design-system.md`](rules/design-system.md) — Design System, DS-first e reutilização.
-- [`CLAUDE.md`](CLAUDE.md) — contrato operacional obrigatório do agente.
+- [`rules/architecture.md`](rules/architecture.md) — Atomic Design, Layout, Pages, Templates, and dependencies.
+- [`rules/design-system.md`](rules/design-system.md) — Design System, DS-first, and reuse.
+- [`CLAUDE.md`](CLAUDE.md) — mandatory agent operating contract.
 
-## Regra
+## Rule
 
-O agente **DEVE usar `rules/` e `CLAUDE.md` como fontes de verdade**. Este arquivo existe apenas como referência/compatibilidade durante a migração do repositório.
+The agent **MUST use `rules/` and `CLAUDE.md` as the sources of truth**. This file exists only as a migration/compatibility reference.
 
-**NÃO adicione novas regras arquiteturais aqui.** Quando uma regra precisar ser alterada, altere a fonte normativa correspondente em `rules/`.
+**DO NOT add new architectural rules here.** When a rule needs to change, update the corresponding normative source in `rules/`.
