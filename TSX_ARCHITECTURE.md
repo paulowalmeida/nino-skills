@@ -60,9 +60,34 @@ Atom
 - Representam uma rota/contexto concreto da aplicação.
 - Atuam como a **camada de governança da UI** daquela rota.
 - Coordenam contexto, estado, dados e dependências da página.
-- **Devem utilizar um Template como sua camada de composição visual.**
-- **Não devem compor diretamente Organisms, Molecules ou Atoms.**
+- **DEVEM utilizar um Template como sua única camada de composição visual.**
+- **NÃO DEVEM importar, renderizar ou compor diretamente Organisms, Molecules ou Atoms.**
+- **A composição visual abaixo de Page DEVE ocorrer dentro do Template.**
 - Não devem absorver responsabilidades visuais pertencentes às camadas inferiores.
+
+Exemplo permitido:
+
+```tsx
+// ✅ Page → Template
+return <UserTemplate user={user} onSelect={handleSelect} />;
+```
+
+Exemplos proibidos:
+
+```tsx
+// ❌ Page → Organism
+return <UserProfile user={user} />;
+```
+
+```tsx
+// ❌ Page → Molecule
+return <UserSearch />;
+```
+
+```tsx
+// ❌ Page → Atom
+return <Button onClick={handleClick}>Salvar</Button>;
+```
 
 ## 2. Composição e dependências
 
