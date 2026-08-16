@@ -49,24 +49,26 @@ Atom
 ### Templates
 
 - Definem a composição estrutural de uma página.
-- Compõem Organisms, Molecules e Atoms.
+- São a camada responsável por compor Organisms, Molecules e Atoms.
 - Representam a estrutura da página, não uma rota concreta nem dados concretos da aplicação.
 - Não possuem lógica de negócio.
 - Não acessam API/Service diretamente.
+- Um Template pode pular níveis inferiores quando isso fizer sentido (por exemplo, Template → Organism → Atom).
 
 ### Pages
 
 - Representam uma rota/contexto concreto da aplicação.
 - Atuam como a **camada de governança da UI** daquela rota.
 - Coordenam contexto, estado, dados e dependências da página.
-- Compõem/utilizam Templates e injetam os dados, ações e dependências necessários na árvore de apresentação.
+- **Devem utilizar um Template como sua camada de composição visual.**
+- **Não devem compor diretamente Organisms, Molecules ou Atoms.**
 - Não devem absorver responsabilidades visuais pertencentes às camadas inferiores.
 
 ## 2. Composição e dependências
 
 ### Direção
 
-As dependências fluem para baixo na hierarquia do Atomic Design:
+As dependências seguem a hierarquia:
 
 ```text
 Page → Template → Organism → Molecule → Atom
@@ -74,7 +76,7 @@ Page → Template → Organism → Molecule → Atom
 
 Um componente **não pode depender de outro componente da mesma camada do Atomic Design**.
 
-Uma camada superior pode pular camadas inferiores quando isso fizer sentido. Por exemplo, um Organism pode utilizar um Atom diretamente.
+Uma camada superior pode pular camadas inferiores quando isso fizer sentido. Por exemplo, um Template pode utilizar um Organism diretamente, sem precisar criar uma Molecule artificialmente.
 
 Porém:
 
