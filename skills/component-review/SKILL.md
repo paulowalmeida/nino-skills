@@ -1,71 +1,93 @@
 ---
 name: component-review
-description: Review nino-app Components for design-system use, responsibility boundaries, CSS ownership, naming, cohesion, and meaningful extraction.
+description: Review nino-app Components for Design System usage, responsibility boundaries, CSS ownership, naming, cohesion, and meaningful extraction.
 ---
 
 # Component Review
 
 ## Purpose
 
-Determine whether a Component is a cohesive UI unit with a clean boundary, correct Design System usage, and no hidden domain responsibility.
+Determine whether a Component is a coherent UI unit with the smallest practical responsibility, correct DS usage, explicit ownership, and a stable public contract.
 
 ## Authority
 
-Apply `CLAUDE.md`, applicable `.claude/rules/*`, `rules/architecture.md`, `rules/design-system.md`, `rules/coding.md`, and `rules/styling.md` before this Skill. Objective `enforce-*` failures are hard constraints; this Skill handles the semantic decisions they cannot safely encode.
+Apply `CLAUDE.md`, applicable `rules/*`, then objective `enforce-*` results. Mechanical failures are hard defects. Existing code is evidence, not permission.
 
-## Review Method
+## Mandatory Review Sequence
 
-1. Confirm the unit's actual responsibility from JSX, props, state, effects, imports, and callers.
-2. Inspect the DS catalog before judging raw markup or locally recreated primitives.
-3. Check the folder/file/export boundary and CSS ownership.
-4. Evaluate cohesion and extraction opportunities.
-5. Verify naming and public API communicate the component's real responsibility.
+1. Inspect the complete component, its CSS, exports, props, state, effects, and immediate callers.
+2. Inspect the applicable DS catalog before judging native markup or local styling.
+3. Confirm folder/file/export ownership and whether the unit contains unrelated code.
+4. Determine the component's dominant responsibility and reasons to change.
+5. Check composition direction, state ownership, data access, and public API.
+6. Evaluate extraction only after the boundary is understood.
+7. Record each finding and disposition.
 
 ## 9/10 Gates
 
-Flag when:
+Report a confirmed violation when evidence shows:
 
-- the Component composes sibling application Components instead of remaining at its intended boundary;
-- it contains service/API orchestration or business policy;
+- sibling application Components are composed where the architecture forbids it;
+- service/API orchestration or business policy is owned by the Component;
 - raw markup recreates an existing DS primitive without a demonstrated DS gap;
-- Tailwind/local styling reproduces a DS component or bypasses the intended styling boundary;
-- the folder contains unrelated components, stories/examples, or support files that obscure ownership;
-- a CSS module exists without real ownership or is shared implicitly through unrelated components;
-- a second JSX-returning function is actually a distinct UI responsibility with no reason to remain nested;
-- a large JSX block has independent semantic identity, state, styling, or reason to change, but extraction would improve comprehension;
-- a proposed extraction is only a line-count reduction, wrapper, or speculative reuse;
-- names such as `Content`, `Item`, `Section`, `handleChange`, or `active` hide domain/UI meaning when a precise name is available.
+- local styling recreates an existing DS contract or bypasses the intended styling boundary;
+- a folder contains unrelated Components, stories/examples, or support code that obscures ownership;
+- CSS exists without clear ownership, or ownership is implicit across unrelated units;
+- nested JSX contains an independent UI responsibility that is already a meaningful boundary;
+- the public props contract exposes implementation details or unrelated concerns;
+- a proposed extraction only reduces LOC, moves the same coupling, or creates parameter plumbing;
+- names obscure the actual UI/domain responsibility.
 
 ## DS-First Test
 
-For each non-trivial native element or handcrafted visual pattern:
+For every non-trivial native element or handcrafted visual pattern:
 
 1. identify its semantic role;
 2. inspect the current DS catalog;
-3. decide whether an equivalent primitive exists;
-4. if it does, prefer the DS primitive;
-5. if it does not, document why the native markup is necessary.
+3. determine whether an equivalent exists;
+4. reuse it when it exists;
+5. when it does not, record the concrete reason local implementation is necessary.
 
-Precedent in another file is not evidence that duplication is correct.
+Repository precedent is not evidence that a duplicate primitive is correct.
 
-## SRP and Extraction Test
+## SRP / Extraction Test
 
-Extraction is justified only when the extracted unit has a meaningful responsibility and the caller becomes easier to understand. Reuse is optional; semantic identity and a distinct reason to change are sufficient.
+Extract only when the candidate has semantic identity, independent state/style, or a distinct reason to change **and** the caller becomes easier to understand. Reuse is optional; semantic ownership is sufficient.
 
-Reject decomposition that merely lowers LOC, moves a branch tree, creates parameter plumbing, or increases indirection without a stronger boundary.
+Reject extraction that merely:
+
+- lowers line count;
+- hides a branch tree;
+- forwards parameters through a wrapper;
+- creates speculative reuse;
+- increases indirection without improving responsibility.
+
+## Naming Test
+
+Names MUST communicate the UI/domain role without requiring implementation inspection. Conventional concise names are acceptable when unambiguous in context; generic names are a problem when they conceal scope or responsibility.
+
+## Finding Classification
+
+Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
+
+`NEEDS-EVIDENCE` must state which callers, DS entries, or related files remain necessary. It must not be silently treated as PASS.
 
 ## Evidence Standard
 
-Every finding MUST include exact file/line, observed behavior, boundary problem, relevant DS alternative or ownership rule when applicable, and the smallest correction that improves cohesion. State uncertainty when the surrounding contract is insufficient.
+Every confirmed finding MUST contain exact file/line, observed behavior, expected boundary, relevant DS evidence, impact, and the smallest correction. Retrospective PASS requires complete inspection of the scoped component, not search results alone.
 
 ## Handoffs
 
-- Layer misclassification → `architecture-review`.
-- Composition-level section → `composition-review`.
-- State/effect ownership → `hook-state-review`.
-- Complexity/refactoring → `complexity-refactoring`.
-- Pure CSS/import/structure violations → corresponding `enforce-*` hook.
+- Atomic layer responsibility → `architecture-review`.
+- Section-level UI → `composition-review`.
+- Hook/state/effect → `hook-state-review`.
+- Data/service boundary → `data-boundary-review`.
+- Naming/abstraction/cohesion → `code-quality-review`.
+- Structural decomposition → `complexity-refactoring`.
+- Objective CSS/import/structure violations → `enforce-*`.
 
-## Non-Goals
+The receiving Skill owns the disposition; do not bounce a finding back without new evidence.
 
-Do not demand extraction merely for reuse, file size, or stylistic preference. Do not treat the existing codebase as architectural precedent. Do not replace a DS primitive with a custom equivalent without a demonstrated need.
+## Final Review Gate
+
+Before PASS, confirm component scope, DS decision, responsibility, state/data ownership, CSS ownership, naming, and extraction risk were all inspected.
