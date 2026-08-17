@@ -5,7 +5,6 @@ import path from "node:path";
 import { extractImports, lineAt, loadTsConfig, resolveImport, SOURCE_EXTENSIONS } from "./module-graph.mjs";
 
 const root = process.argv[2];
-
 if (!root) {
   console.error("Usage: node enforcement/check-architecture-boundaries.mjs <project-src-root>");
   process.exit(2);
@@ -20,17 +19,19 @@ if (!fs.existsSync(sourceRoot) || !fs.statSync(sourceRoot).isDirectory()) {
 const config = loadTsConfig(sourceRoot);
 const violations = [];
 const unresolved = [];
+const files = [];
+const sourceCache = new Map();
+const importsCache = new Map();
 
 const layerRules = [
   {
     name: "presentation-cannot-import-state",
     sourceDirectories: ["UI/atoms", "UI/molecules", "UI/organisms"],
     targetDirectories: ["states"],
-    message: "Presentation components must not import state modules directly.",
+    message: "Presentation components must not depend on state modules, directly or transitively.",
   },
 ];
 
-const files = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const fullPath = path.join(directory, entry.name);
@@ -49,31 +50,60 @@ function inDirectory(file, directory) {
   return value === directory || value.startsWith(`${directory}/`);
 }
 
-for (const file of files) {
-  const source = fs.readFileSync(file, "utf8");
+function sourceOf(file) {
+  if (!sourceCache.has(file)) sourceCache.set(file, fs.readFileSync(file, "utf8"));
+  return sourceCache.get(file);
+}
 
+function dependenciesOf(file) {
+  if (importsCache.has(file)) return importsCache.get(file);
+  const source = sourceOf(file);
+  const dependencies = [];
   for (const { specifier, index } of extractImports(source)) {
     if (!specifier.startsWith(".") && !specifier.startsWith("@")) continue;
-
     const resolved = resolveImport(specifier, file, config);
     if (!resolved) {
       unresolved.push({ file: relative(file), line: lineAt(source, index), specifier });
       continue;
     }
+    dependencies.push({ resolved, specifier, index });
+  }
+  importsCache.set(file, dependencies);
+  return dependencies;
+}
 
-    for (const rule of layerRules) {
-      if (!rule.sourceDirectories.some((directory) => inDirectory(file, directory))) continue;
-      if (!rule.targetDirectories.some((directory) => inDirectory(resolved, directory))) continue;
+function findForbiddenDependency(startFile, targetDirectories, visited = new Set()) {
+  if (visited.has(startFile)) return null;
+  visited.add(startFile);
 
-      violations.push({
-        file: relative(file),
-        line: lineAt(source, index),
-        rule: rule.name,
-        message: rule.message,
-        import: specifier,
-        target: relative(resolved),
-      });
+  for (const dependency of dependenciesOf(startFile)) {
+    if (targetDirectories.some((directory) => inDirectory(dependency.resolved, directory))) {
+      return { ...dependency, target: dependency.resolved };
     }
+
+    const nested = findForbiddenDependency(dependency.resolved, targetDirectories, visited);
+    if (nested) return nested;
+  }
+
+  return null;
+}
+
+for (const file of files) {
+  for (const rule of layerRules) {
+    if (!rule.sourceDirectories.some((directory) => inDirectory(file, directory))) continue;
+
+    const dependency = findForbiddenDependency(file, rule.targetDirectories);
+    if (!dependency) continue;
+
+    const source = sourceOf(file);
+    violations.push({
+      file: relative(file),
+      line: lineAt(source, dependency.index),
+      rule: rule.name,
+      message: rule.message,
+      import: dependency.specifier,
+      target: relative(dependency.target),
+    });
   }
 }
 
