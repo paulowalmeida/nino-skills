@@ -22,13 +22,23 @@ function loadPolicy(file) {
   try {
     const policy = JSON.parse(fs.readFileSync(file, "utf8"));
     if (!Array.isArray(policy.rules)) throw new Error("policy.rules must be an array");
+
+    const ids = new Set();
     for (const rule of policy.rules) {
-      if (!rule.id || !rule.severity || !["block", "warning"].includes(rule.severity)) {
-        throw new Error("each rule requires id and severity=block|warning");
+      if (!rule.id || ids.has(rule.id)) throw new Error(`rules require unique non-empty ids: ${rule.id ?? "missing id"}`);
+      if (!rule.severity || !["block", "warning"].includes(rule.severity)) {
+        throw new Error(`rule ${rule.id} requires severity=block|warning`);
       }
-      if (!Array.isArray(rule.sourceDirectories) || !Array.isArray(rule.targetDirectories)) {
-        throw new Error(`rule ${rule.id} requires sourceDirectories and targetDirectories arrays`);
+      if (!rule.mode || !["direct", "transitive"].includes(rule.mode)) {
+        throw new Error(`rule ${rule.id} requires mode=direct|transitive`);
       }
+      if (!Array.isArray(rule.sourceDirectories) || rule.sourceDirectories.length === 0) {
+        throw new Error(`rule ${rule.id} requires a non-empty sourceDirectories array`);
+      }
+      if (!Array.isArray(rule.targetDirectories) || rule.targetDirectories.length === 0) {
+        throw new Error(`rule ${rule.id} requires a non-empty targetDirectories array`);
+      }
+      ids.add(rule.id);
     }
     return policy.rules;
   } catch (error) {
@@ -86,7 +96,13 @@ function dependenciesOf(file) {
   return dependencies;
 }
 
-function findForbiddenDependency(startFile, targetDirectories, visited = new Set()) {
+function directForbiddenDependency(startFile, targetDirectories) {
+  return dependenciesOf(startFile).find((dependency) =>
+    targetDirectories.some((directory) => inDirectory(dependency.resolved, directory)),
+  ) ?? null;
+}
+
+function transitiveForbiddenDependency(startFile, targetDirectories, visited = new Set()) {
   if (visited.has(startFile)) return null;
   visited.add(startFile);
 
@@ -95,7 +111,7 @@ function findForbiddenDependency(startFile, targetDirectories, visited = new Set
       return { ...dependency, target: dependency.resolved };
     }
 
-    const nested = findForbiddenDependency(dependency.resolved, targetDirectories, visited);
+    const nested = transitiveForbiddenDependency(dependency.resolved, targetDirectories, visited);
     if (nested) return nested;
   }
 
@@ -106,7 +122,9 @@ for (const file of files) {
   for (const rule of layerRules) {
     if (!rule.sourceDirectories.some((directory) => inDirectory(file, directory))) continue;
 
-    const dependency = findForbiddenDependency(file, rule.targetDirectories);
+    const dependency = rule.mode === "transitive"
+      ? transitiveForbiddenDependency(file, rule.targetDirectories)
+      : directForbiddenDependency(file, rule.targetDirectories);
     if (!dependency) continue;
 
     const source = sourceOf(file);
@@ -116,7 +134,7 @@ for (const file of files) {
       rule: rule.id,
       message: rule.message ?? "Architecture boundary violation.",
       import: dependency.specifier,
-      target: relative(dependency.target),
+      target: relative(dependency.target ?? dependency.resolved),
     };
 
     if (rule.severity === "warning") warnings.push(diagnostic);
