@@ -38,9 +38,34 @@ When a function begins accumulating distinct responsibilities, the agent **MUST 
 
 ## Function Complexity — Hard Limit
 
-The **cyclomatic complexity of every individual function MUST be 5 or less**.
+The project's authoritative function-complexity metric is the **CodeMetrics collected-complexity calculation** used by the VS Code extension published as `kisstkondoros.vscode-codemetrics`.
 
-This rule applies to all individual functions regardless of where they are defined:
+CodeMetrics computes complexity from the source **AST**: it parses the source, walks AST nodes, and applies the configured contribution for each node to produce a collected-complexity value for the analyzed function/method. The project **MUST use that same measurement model** rather than substituting a different definition of cyclomatic, cognitive, or algorithmic complexity. citeturn849916search0
+
+### Authoritative implementation
+
+The current pinned reference is:
+
+```text
+Tool: CodeMetrics
+Extension ID: kisstkondoros.vscode-codemetrics
+Reference version: 1.26.1
+Metric engine: tsmetrics-core 1.4.1
+Languages: TypeScript / TSX / JavaScript / JSX
+Threshold: 5
+```
+
+The referenced CodeMetrics release uses `tsmetrics-core` 1.4.1 and includes TypeScript/TSX/JavaScript/JSX support. citeturn608562search0
+
+The project **MUST NOT** treat the extension's visual severity colors, CodeLens display threshold, or any other presentation setting as the complexity rule. The authoritative value is the **collected complexity of the individual function**.
+
+The exact implementation/configuration is authoritative. If the repository later vendors or reproduces this calculation, the reproduction **MUST match the pinned implementation and configuration** rather than inventing a new formula.
+
+### Hard threshold
+
+The **CodeMetrics collected complexity of every individual function MUST be 5 or less**.
+
+This rule applies to:
 
 - function declarations;
 - arrow functions;
@@ -52,15 +77,41 @@ This rule applies to all individual functions regardless of where they are defin
 - utility functions;
 - asynchronous functions;
 - Service operations;
-- class methods.
+- class methods;
+- function expressions.
 
-Services are NOT exempt. A Service file MAY contain many operations, but **each individual operation MUST have cyclomatic complexity ≤ 5**.
+Services are NOT exempt. A Service file MAY contain many operations, but **each individual operation MUST have collected complexity ≤ 5**.
+
+### Measurement rules
+
+The agent **MUST**:
+
+1. use the pinned CodeMetrics calculation as the authoritative metric;
+2. evaluate each individual function independently;
+3. include arrow functions and function expressions;
+4. use the configured node contributions of the pinned implementation;
+5. treat the reported collected complexity as authoritative.
+
+The agent **MUST NOT**:
+
+- describe the CodeMetrics score as if it were a standard cyclomatic-complexity score;
+- replace the CodeMetrics score with a manually calculated number;
+- substitute another analyzer merely because it reports a lower value;
+- ignore a function because the editor does not currently display a CodeLens for it;
+- use `IgnoredFunctionNames` or another exclusion setting to bypass the rule;
+- change CodeMetrics node weights or function exclusions to make code pass the threshold.
+
+### Function coverage and analyzer limitations
+
+All relevant function forms **MUST remain included** in measurement.
+
+If the official measurement tool does not report a function because of an analyzer limitation, that limitation **MUST NOT** be interpreted as an exemption. The project's enforcement implementation must be fixed or supplemented so that the function is measured using the same authoritative calculation.
 
 ### TSX Composition Exception
 
-There is exactly one exception to the complexity limit:
+There is exactly one architectural exception to the complexity limit:
 
-> A function whose **primary and clearly identifiable responsibility is rendering/composing TSX markup** MAY exceed complexity 5 when that complexity is inherent to the UI composition itself.
+> A function whose **primary and clearly identifiable responsibility is rendering/composing TSX markup** MAY exceed complexity 5 when that complexity is inherent to UI composition itself.
 
 This exception:
 
@@ -84,13 +135,13 @@ return (
 ```ts
 // ❌ no exception: function performs business/processing logic
 function processOrder(order: Order) {
-  // complexity must remain ≤ 5
+  // CodeMetrics collected complexity MUST remain ≤ 5
 }
 ```
 
 ### Required Response to Complexity > 5
 
-When a non-exempt function exceeds complexity 5, the agent **MUST reduce the function's complexity before considering the task complete**.
+When a non-exempt function exceeds complexity 5, the agent **MUST reduce the CodeMetrics collected complexity to 5 or less before considering the task complete**.
 
 Preferred techniques include:
 
@@ -106,9 +157,10 @@ The agent **MUST NOT**:
 - split code into meaningless wrappers solely to make the metric pass;
 - move complexity into another function merely to hide it;
 - use indirection to evade the complexity check;
-- add an artificial function boundary with no coherent responsibility.
+- add an artificial function boundary with no coherent responsibility;
+- alter metric configuration to lower the measured score.
 
-Any extracted function **MUST itself satisfy Single Responsibility** and **MUST independently obey the complexity limit**.
+Any extracted function **MUST itself satisfy Single Responsibility and MUST independently obey the complexity limit**.
 
 ## Functions Must Remain Local and Understandable
 
@@ -306,7 +358,7 @@ There is no universal maximum number of lines that automatically makes code inco
 
 However, the agent **MUST treat growing size and complexity as a signal to reassess responsibility**.
 
-A file or function that becomes difficult to understand because it contains multiple responsibilities **MUST be decomposed by responsibility, not arbitrarily by line count**.
+A file or function that becomes difficult to understand because it contains multiple responsibilities **MUST** be decomposed by responsibility, not arbitrarily by line count.
 
 A split **MUST NOT** be performed merely to satisfy an artificial line-count target.
 
@@ -339,12 +391,13 @@ Before completing a coding task, the agent **MUST**:
 
 1. inspect the final changed code;
 2. verify that every individual function complies with Single Responsibility;
-3. verify that every non-exempt individual function has cyclomatic complexity ≤ 5;
+3. verify that every non-exempt individual function has CodeMetrics collected complexity ≤ 5 according to the pinned implementation;
 4. confirm that any complexity exception is limited to the TSX composition/render function and is not hiding complexity in helpers;
-5. verify that types and contracts remain correct;
-6. verify that no forbidden workaround or dependency was introduced;
-7. run the relevant typecheck, lint, complexity, tests, or other available checks;
-8. inspect the final diff for unrelated changes.
+5. confirm that the CodeMetrics implementation/configuration was not modified to make the code pass;
+6. verify that types and contracts remain correct;
+7. verify that no forbidden workaround or dependency was introduced;
+8. run the relevant typecheck, lint, complexity, tests, or other available checks;
+9. inspect the final diff for unrelated changes.
 
 Passing automated checks does not replace reviewing the implementation against these rules.
 
@@ -352,7 +405,7 @@ Passing automated checks does not replace reviewing the implementation against t
 
 The following rules **MUST be protected mechanically whenever technically possible**:
 
-- cyclomatic complexity ≤ 5 for every non-exempt function;
+- CodeMetrics collected complexity ≤ 5 for every non-exempt function;
 - Single Responsibility violations where objective detection is possible;
 - forbidden `any` usage;
 - prohibited dependency direction;
@@ -363,8 +416,10 @@ The following rules **MUST be protected mechanically whenever technically possib
 - prohibited export patterns;
 - architecture-specific file/folder conventions.
 
+The enforcement implementation **MUST use the same authoritative CodeMetrics calculation and pinned version/configuration as this rule**. A different complexity engine MUST NOT be used as a silent substitute.
+
 When an automated check fails, the agent **MUST fix the implementation rather than weaken the check**.
 
 ## Final Rule
 
-> **Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, keeps every individual function single-purpose and within the complexity limit, avoids speculative abstraction, and leaves no hidden error or unrelated change behind.**
+> **Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, keeps every individual function single-purpose and within the authoritative CodeMetrics complexity limit, avoids speculative abstraction, and leaves no hidden error or unrelated change behind.**
