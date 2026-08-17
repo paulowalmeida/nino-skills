@@ -72,6 +72,16 @@ Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVID
 
 `NEEDS-EVIDENCE` must state which callers, DS entries, or related files remain necessary. It must not be silently treated as PASS.
 
+## Resolution Protocol
+
+- **VIOLATION:** provide the evidence and required correction.
+- **LEGACY:** identify the out-of-scope violation; it MUST NOT justify new code.
+- **EXCEPTION:** record the explicit project authorization and exact scope. No inferred or convenience exceptions.
+- **NEEDS-EVIDENCE:** name the missing evidence and the next concrete inspection needed. It remains unresolved until that evidence is obtained or the review is explicitly closed as incomplete.
+- **PASS:** may be declared only after the Final Review Gate is satisfied.
+
+A review MUST NOT end with an unresolved `NEEDS-EVIDENCE` item silently treated as PASS. If required evidence cannot be obtained, the final status is **INCOMPLETE**, not PASS.
+
 ## Evidence Standard
 
 Every confirmed finding MUST contain exact file/line, observed behavior, expected boundary, relevant DS evidence, impact, and the smallest correction. Retrospective PASS requires complete inspection of the scoped component, not search results alone.
@@ -88,6 +98,10 @@ Every confirmed finding MUST contain exact file/line, observed behavior, expecte
 
 The receiving Skill owns the disposition; do not bounce a finding back without new evidence.
 
+## Non-Goals
+
+Do not create speculative abstractions or treat file size as proof of poor design. Do not use existing code as architectural permission. Do not auto-fix during review unless implementation was explicitly requested.
+
 ## Final Review Gate
 
-Before PASS, confirm component scope, DS decision, responsibility, state/data ownership, CSS ownership, naming, and extraction risk were all inspected.
+Before PASS, confirm component scope, DS decision, responsibility, state/data ownership, CSS ownership, naming, extraction risk, relevant callers, and objective enforcement results were inspected.
