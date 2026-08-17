@@ -59,6 +59,16 @@ Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVID
 
 `NEEDS-EVIDENCE` must identify the missing route/caller/DS context. It must not be silently treated as PASS.
 
+## Resolution Protocol
+
+- **VIOLATION:** provide the evidence and required correction.
+- **LEGACY:** identify the out-of-scope violation; it MUST NOT justify new code.
+- **EXCEPTION:** record the explicit project authorization and exact scope. No inferred or convenience exceptions.
+- **NEEDS-EVIDENCE:** name the missing evidence and the next concrete inspection needed. It remains unresolved until that evidence is obtained or the review is explicitly closed as incomplete.
+- **PASS:** may be declared only after the Final Review Gate is satisfied.
+
+A review MUST NOT end with an unresolved `NEEDS-EVIDENCE` item silently treated as PASS. If required evidence cannot be obtained, the final status is **INCOMPLETE**, not PASS.
+
 ## Evidence Standard
 
 Every confirmed finding MUST include exact file/line, observed responsibility, expected boundary, concrete evidence, impact, and minimal correction. Retrospective PASS requires complete inspection of the scoped Composition and relevant immediate context.
@@ -81,4 +91,4 @@ Do not create a Composition solely because JSX is large. Do not introduce specul
 
 ## Final Review Gate
 
-Before PASS, confirm route ownership, section responsibility, state ownership, data boundary, DS decision, CSS ownership, naming, and extraction risk were inspected.
+Before PASS, confirm route ownership, section responsibility, state ownership, data boundary, DS decision, CSS ownership, naming, extraction risk, relevant immediate context, and objective enforcement results were inspected.
