@@ -1,10 +1,22 @@
 # Architecture Rules
 
-This file defines **mandatory implementation constraints**. These are not recommendations and are not merely review criteria.
+This file defines **mandatory implementation constraints** for the Nino application architecture. These are not recommendations and are not merely review criteria.
 
 When a rule in this file applies, the agent **MUST** obey it.
 
 The absence of explicit permission **MUST NOT** be interpreted as permission to create an exception.
+
+## Scope and Repository State
+
+For application architecture, the primary target is:
+
+```text
+nino-app/apps/manager/src/
+```
+
+The repository is a monorepo. Shared packages, including the Design System, are governed by their own package boundaries and MUST NOT be treated as application-layer substitutes.
+
+**Existing implementation is not automatically architectural precedent.** Code already present in `apps/manager` may predate these rules and may violate the desired architecture. Existing violations MUST NOT be copied, generalized, or cited as permission to introduce new violations. New or modified code MUST follow these rules unless an explicit project decision changes them.
 
 ## External Methodology Foundation
 
@@ -240,7 +252,7 @@ Creating a semantically duplicated component when a suitable solution already ex
 
 ## Decision Gate Before Writing TSX
 
-Before writing a new TSX file, the agent **MUST be able to answer**:
+Before writing a new TSX file, the agent **MUST** be able to answer:
 
 1. What is this component's responsibility?
 2. Which Atomic Design layer does it belong to?
@@ -249,6 +261,7 @@ Before writing a new TSX file, the agent **MUST be able to answer**:
 5. Which Design System solution was evaluated?
 6. Why is a new unit necessary?
 7. If state is consumed directly, why is this layer authorized to consume that source of truth?
+8. Is any conflicting existing implementation being treated as legacy rather than as an architectural precedent?
 
 If any required answer cannot be determined with sufficient confidence, the agent **MUST NOT invent a solution**. It must continue investigating or report the ambiguity.
 
@@ -276,7 +289,20 @@ The agent **MUST NOT:**
 - create an artificial abstraction to evade a rule;
 - use indirect imports, re-exports, aliases, or wrappers to access a forbidden layer;
 - move a dependency to a non-TSX file solely to bypass a TSX-layer restriction without preserving the same architectural boundary;
-- pass a Store Hook through props, context, wrappers, or intermediary components solely to bypass a prohibited state-consumption boundary.
+- pass a Store Hook through props, context, wrappers, or intermediary components solely to bypass a prohibited state-consumption boundary;
+- use existing `apps/manager` code as justification for violating this architecture in new or modified code.
+
+## Legacy Code Rule
+
+When an existing `apps/manager` implementation conflicts with these rules:
+
+1. treat the existing implementation as **legacy/observed state**, not as permission;
+2. do not reproduce the conflicting pattern in new code;
+3. if modifying that area, bring the modified code toward compliance when doing so is within task scope;
+4. do not perform unrelated migrations solely because a legacy violation exists;
+5. report significant pre-existing architectural violations when they materially affect the requested change.
+
+The agent **MUST NOT** claim that the current codebase already conforms unless that has been independently verified.
 
 ## External Foundation vs. Nino Constraint
 
