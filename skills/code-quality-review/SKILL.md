@@ -7,65 +7,83 @@ description: Review nino-app semantic clarity, naming, comments, abstraction qua
 
 ## Purpose
 
-Review qualities that are difficult to encode safely as blocking rules: whether code explains itself locally, whether abstractions represent real concepts, and whether refactoring improves cohesion rather than merely metrics.
+Review qualities that are difficult to encode safely as blocking rules: whether code communicates intent locally, whether abstractions represent real concepts, and whether changes improve cohesion instead of merely metrics.
 
 ## Authority
 
-Apply `CLAUDE.md`, `.claude/rules/*`, `rules/coding.md`, and the relevant domain rules. Objective `enforce-*` failures are hard constraints. This Skill must not override them or turn subjective preferences into hard rules.
+Apply `CLAUDE.md`, applicable `rules/*`, then objective `enforce-*` results. This Skill supplies semantic judgment; it must not turn personal style into mandatory project policy.
 
-## Review Method
+## Mandatory Review Sequence
 
-1. Read the unit locally before judging its quality.
+1. Read the complete target unit and relevant public API.
 2. Identify what a reader must infer from names, control flow, comments, and surrounding context.
-3. Identify the unit's dominant responsibility and reasons to change.
-4. Inspect callers when abstraction quality depends on external usage.
-5. Prefer the smallest change that improves semantic clarity.
+3. Identify dominant responsibility and reasons to change.
+4. Inspect callers when abstraction quality depends on usage.
+5. Check for an existing approved abstraction before proposing a new one.
+6. Evaluate the smallest semantic improvement.
+7. Record each finding and disposition.
 
 ## 9/10 Gates
 
-Flag when:
+Report a confirmed defect when evidence shows:
 
-- a name describes implementation shape instead of domain/UI meaning and forces file inspection to understand intent;
-- comments restate code or compensate for an unclear name instead of documenting a non-obvious constraint/why;
-- an abstraction exists only to reduce line count, satisfy a metric, or anticipate hypothetical reuse;
+- a name describes implementation shape instead of domain/UI meaning and materially obscures intent;
+- a comment restates mechanics or compensates for a name that should carry the meaning;
+- an abstraction exists only for LOC reduction, metric compliance, or hypothetical reuse;
 - a helper name hides materially unrelated responsibilities;
-- a wrapper forwards parameters without creating a meaningful semantic boundary;
-- duplicated knowledge has a shared reason to change but remains artificially separate;
-- extraction produces weaker cohesion, more parameter plumbing, or more indirection;
-- generic containers (`data`, `config`, `content`, `utils`, `handleChange`) are used where domain meaning is available;
-- code requires opening several unrelated helpers to understand a simple local workflow;
-- multiple concepts are coupled only because they happen to execute sequentially.
+- a wrapper merely forwards parameters without a semantic contract;
+- duplicated knowledge has the same reason to change but remains artificially separate;
+- extraction reduces local size while worsening cohesion, parameter plumbing, or indirection;
+- generic containers such as `data`, `config`, `content`, `utils`, or `handleChange` conceal domain meaning where a precise name exists;
+- a simple local workflow requires opening several unrelated helpers to understand it;
+- concepts are coupled only because they execute sequentially when a clearer local workflow is possible.
 
 ## Naming Test
 
-A strong name communicates domain, UI role, state meaning, or action without requiring implementation inspection. Do not reject concise names that are conventional and unambiguous within their bounded context.
+A strong name communicates domain, UI role, state meaning, or action without implementation inspection. Conventional concise names are acceptable when unambiguous within the bounded context.
 
 ## Comment Test
 
-Prefer zero comments for obvious mechanics. Keep comments that explain hidden constraints, non-obvious ordering, compatibility/workaround reasoning, or another fact the code cannot express directly.
+Prefer code that explains itself. Keep comments only for facts code cannot express directly: hidden constraints, non-obvious ordering, compatibility/workaround reasoning, or important external assumptions.
 
 ## Abstraction Test
 
 Before proposing an abstraction, identify:
 
-- the concept being abstracted;
-- the independent reason it exists;
-- the contract it creates;
-- why the caller becomes clearer;
-- why existing abstractions do not already solve the problem.
+- concept being abstracted;
+- independent reason it exists;
+- contract created;
+- improvement to caller/consumer clarity;
+- existing abstractions checked and why they are insufficient.
+
+## Anti-Gaming
+
+Do not refactor because a number feels high, a file looks unfamiliar, or a different style is preferred. Do not optimize for shorter code at the expense of comprehension.
+
+## Finding Classification
+
+Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
+
+`NEEDS-EVIDENCE` must state the missing caller/context evidence. Never convert an unresolved subjective concern into FAIL or PASS without evidence.
 
 ## Evidence Standard
 
-Every finding MUST include exact file/line, what the reader must infer, why that creates a concrete maintenance risk, and the smallest semantic improvement. Avoid vague style judgments.
+Every confirmed finding MUST include exact file/line, what the reader must infer, concrete maintenance risk, applicable rule/principle, and smallest semantic improvement. Retrospective PASS requires sufficient surrounding-context inspection.
 
 ## Handoffs
 
-- Responsibility/layer mismatch → `architecture-review`.
+- Responsibility/layer → `architecture-review`.
 - Component/Composition boundary → `component-review` / `composition-review`.
-- Hook/state boundary → `hook-state-review`.
-- Data/service boundary → `data-boundary-review`.
-- Structural risk → `complexity-refactoring`.
+- Hook/state → `hook-state-review`.
+- Data/service → `data-boundary-review`.
+- Structural complexity → `complexity-refactoring`.
+
+The receiving Skill owns final disposition; no ping-pong without new evidence.
 
 ## Non-Goals
 
-Do not refactor merely to make code look different. Do not prefer shorter code over clearer code. Do not force abstraction, DRY, comments, or naming conventions beyond what the project rules and semantic evidence support.
+Do not refactor merely to make code look different. Do not force DRY, abstraction, comments, or naming conventions beyond project rules and semantic evidence.
+
+## Final Review Gate
+
+Before PASS, confirm naming, comments, abstraction justification, cohesion, caller readability, duplication risk, and existing-solution search were inspected.
