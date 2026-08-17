@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { runSkillHook } from './hook-kit.mjs'
+
 const match = (path) => /\.tsx?$/.test(path)
 
 const violations = (path, toolName, lines) => {
@@ -28,4 +30,4 @@ const violations = (path, toolName, lines) => {
   return found
 }
 
-export { match, violations }
+await runSkillHook({ name: 'enforce-types', match, violations })
