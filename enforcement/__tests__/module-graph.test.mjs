@@ -21,8 +21,7 @@ fs.writeFileSync(path.join(root, "tsconfig.app.json"), JSON.stringify({
 
 const config = loadTsConfig(src);
 const importer = path.join(src, "UI", "atoms", "Button.tsx");
-const resolved = resolveImport("@states/useSessionStore", importer, config);
-assert.equal(resolved, path.join(src, "states", "useSessionStore.ts"));
+assert.equal(resolveImport("@states/useSessionStore", importer, config), path.join(src, "states", "useSessionStore.ts"));
 assert.equal(resolveImport("@atoms/Button", importer, config), importer);
 assert.equal(resolveImport("@states/missing", importer, config), null);
 
@@ -35,15 +34,17 @@ const imports = extractImports(`
   export {
     value as other,
   } from "./other";
+  export * from "./star";
   const z = require("./runtime");
   const lazy = import("./lazy");
   const meta = import.meta.url;
-  const template = `import ignored from "./template"`;
+  const template = \`import ignored from "./template"\`;
 `);
 
 assert.deepEqual(imports.map(({ specifier }) => specifier), [
   "@states/useSessionStore",
   "./other",
+  "./star",
   "./runtime",
   "./lazy",
 ]);
