@@ -1,36 +1,71 @@
 ---
 name: component-review
-description: Review nino-app Components for DS-first composition, one-component-per-folder boundaries, CSS ownership, naming, and single responsibility.
+description: Review nino-app Components for design-system use, responsibility boundaries, CSS ownership, naming, cohesion, and meaningful extraction.
 ---
 
 # Component Review
 
-Review whether a Component is a cohesive UI unit with a clear boundary and no hidden business responsibility.
+## Purpose
 
-## Before Reviewing
+Determine whether a Component is a cohesive UI unit with a clean boundary, correct Design System usage, and no hidden domain responsibility.
 
-Read the applicable component, CSS, coding, and design-system rules. Inspect the DS catalog rather than assuming raw HTML or local utilities are acceptable.
+## Authority
 
-## Checks
+Apply `CLAUDE.md`, applicable `.claude/rules/*`, `rules/architecture.md`, `rules/design-system.md`, `rules/coding.md`, and `rules/styling.md` before this Skill. Objective `enforce-*` failures are hard constraints; this Skill handles the semantic decisions they cannot safely encode.
 
-- One exported React Component per Component folder; a second JSX-returning function is a separate component and needs an explicit reason.
-- Folder/file/export naming is consistent and self-explanatory.
-- `Name.module.css` exists only when the Component owns classes from that module.
-- No barrel files or unrelated stories/examples inside the Component directory.
-- The Component composes Elements and DS primitives, not sibling application Components.
-- No service calls, API orchestration, or business policy.
-- Prefer an existing DS primitive before introducing equivalent native markup or utility styling.
-- Extract a meaningful JSX region when it has independent structure, state, styling, semantic identity, or a distinct reason to change; reuse is not required.
-- Comments explain constraints/why, never obvious mechanics.
+## Review Method
+
+1. Confirm the unit's actual responsibility from JSX, props, state, effects, imports, and callers.
+2. Inspect the DS catalog before judging raw markup or locally recreated primitives.
+3. Check the folder/file/export boundary and CSS ownership.
+4. Evaluate cohesion and extraction opportunities.
+5. Verify naming and public API communicate the component's real responsibility.
+
+## 9/10 Gates
+
+Flag when:
+
+- the Component composes sibling application Components instead of remaining at its intended boundary;
+- it contains service/API orchestration or business policy;
+- raw markup recreates an existing DS primitive without a demonstrated DS gap;
+- Tailwind/local styling reproduces a DS component or bypasses the intended styling boundary;
+- the folder contains unrelated components, stories/examples, or support files that obscure ownership;
+- a CSS module exists without real ownership or is shared implicitly through unrelated components;
+- a second JSX-returning function is actually a distinct UI responsibility with no reason to remain nested;
+- a large JSX block has independent semantic identity, state, styling, or reason to change, but extraction would improve comprehension;
+- a proposed extraction is only a line-count reduction, wrapper, or speculative reuse;
+- names such as `Content`, `Item`, `Section`, `handleChange`, or `active` hide domain/UI meaning when a precise name is available.
 
 ## DS-First Test
 
-For every non-trivial native element or hand-built visual pattern, verify the DS catalog. Precedent in another file is not evidence that duplication is valid.
+For each non-trivial native element or handcrafted visual pattern:
 
-## SRP Test
+1. identify its semantic role;
+2. inspect the current DS catalog;
+3. decide whether an equivalent primitive exists;
+4. if it does, prefer the DS primitive;
+5. if it does not, document why the native markup is necessary.
 
-Do not split merely to reduce LOC. Split when the extracted unit has a real responsibility and makes both caller and callee more understandable.
+Precedent in another file is not evidence that duplication is correct.
 
-## Evidence
+## SRP and Extraction Test
 
-Report exact location, boundary issue, DS alternative when relevant, responsibility mismatch, and recommended change. Do not auto-fix during review.
+Extraction is justified only when the extracted unit has a meaningful responsibility and the caller becomes easier to understand. Reuse is optional; semantic identity and a distinct reason to change are sufficient.
+
+Reject decomposition that merely lowers LOC, moves a branch tree, creates parameter plumbing, or increases indirection without a stronger boundary.
+
+## Evidence Standard
+
+Every finding MUST include exact file/line, observed behavior, boundary problem, relevant DS alternative or ownership rule when applicable, and the smallest correction that improves cohesion. State uncertainty when the surrounding contract is insufficient.
+
+## Handoffs
+
+- Layer misclassification → `architecture-review`.
+- Composition-level section → `composition-review`.
+- State/effect ownership → `hook-state-review`.
+- Complexity/refactoring → `complexity-refactoring`.
+- Pure CSS/import/structure violations → corresponding `enforce-*` hook.
+
+## Non-Goals
+
+Do not demand extraction merely for reuse, file size, or stylistic preference. Do not treat the existing codebase as architectural precedent. Do not replace a DS primitive with a custom equivalent without a demonstrated need.
