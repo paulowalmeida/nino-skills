@@ -11,59 +11,74 @@ Determine whether a Composition remains a named, cohesive application section ra
 
 ## Authority
 
-Apply `CLAUDE.md`, applicable `.claude/rules/*`, `rules/architecture.md`, `rules/design-system.md`, `rules/coding.md`, and `rules/styling.md`. Mechanical `enforce-*` diagnostics are objective constraints; this Skill supplies semantic review where pattern matching is unsafe.
+Apply `CLAUDE.md`, applicable `rules/*`, then objective `enforce-*` results. Mechanical failures are hard constraints. Existing code is evidence, never permission.
 
-## Review Method
+## Mandatory Review Sequence
 
-1. Identify the Composition's dominant responsibility.
-2. Inspect what it renders, owns, fetches, mutates, and decides.
-3. Trace the route/Page above it and the Components/Elements below it.
-4. Verify local interaction state is truly local to the section.
-5. Inspect DS usage, naming, CSS ownership, and extraction boundaries.
+1. Inspect the complete Composition and its CSS/support files.
+2. Trace the owning Page/route above and immediate Components/Elements below.
+3. Identify what the section renders, owns, fetches, mutates, decides, and exposes.
+4. Verify local interaction state is actually local and not a disguised application workflow.
+5. Inspect the DS catalog for non-trivial visual primitives.
+6. Evaluate naming, cohesion, extraction, and reuse boundaries.
+7. Record findings with classification and evidence.
 
 ## 9/10 Gates
 
-Flag when:
+Report a confirmed violation when evidence shows:
 
-- the section implements route governance, redirects, or page-level orchestration;
-- it calls services directly or becomes an API boundary instead of using the approved lower layer;
-- it owns unrelated business workflows merely because they appear on the same screen;
-- it becomes a generic UI primitive that should belong to the DS or a lower layer;
-- it recreates an existing DS primitive without a demonstrated gap;
-- its JSX contains multiple independent sections with distinct reasons to change and no semantic boundary;
-- extraction would merely create wrappers, duplicate props, or move complexity without improving cohesion;
-- its name suggests a generic container while its behavior is domain-specific;
-- CSS or support files are attached to the Composition without clear ownership.
+- route governance, redirects, or Page-level orchestration lives inside the Composition;
+- direct service/API access bypasses the approved data boundary;
+- unrelated business workflows are bundled because they happen to share a screen;
+- the section has become a generic UI primitive that belongs in the DS or lower layer;
+- existing DS primitives are recreated without a concrete gap;
+- multiple independent sections with distinct reasons to change remain inseparable without justification;
+- extraction merely moves complexity, duplicates props, or creates forwarding wrappers;
+- the name hides domain-specific behavior behind a generic container concept;
+- CSS/support files have ambiguous ownership.
 
 ## Boundary Test
 
 Ask:
 
-> If this section moved to another Page, which responsibilities would remain valid and which would break?
+> If this section moved to another Page, what would remain valid?
 
-Route-specific governance belongs above the Composition. Shared reusable UI behavior belongs below or beside it according to the project rules. The Composition itself should remain the named section boundary.
+Route-specific governance belongs above it. Reusable lower-level behavior belongs below/alongside it according to the rules. The Composition should remain the named section boundary.
 
 ## DS-First Test
 
-Inspect the actual DS catalog before accepting hand-built typography, layout primitives, form fields, status indicators, or repeated visual patterns. Existing precedent is not proof of correctness.
+For every non-trivial visual pattern, inspect the actual DS catalog before accepting local typography, layout, form, status, or interaction primitives. Existing precedent is not proof.
 
 ## Extraction Test
 
-Extract when the candidate has semantic identity, independent state/styling, or a distinct reason to change and the resulting caller becomes easier to understand. Do not split merely because a block is long.
+Extract only when the candidate has semantic identity, independent state/style, or a distinct reason to change **and** the caller becomes easier to understand. Length alone is insufficient.
+
+## Finding Classification
+
+Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
+
+`NEEDS-EVIDENCE` must identify the missing route/caller/DS context. It must not be silently treated as PASS.
 
 ## Evidence Standard
 
-Every finding MUST include exact file/line, observed responsibility, expected boundary, concrete evidence, and a minimal correction. Distinguish confirmed violations from questions requiring caller/route inspection.
+Every confirmed finding MUST include exact file/line, observed responsibility, expected boundary, concrete evidence, impact, and minimal correction. Retrospective PASS requires complete inspection of the scoped Composition and relevant immediate context.
 
 ## Handoffs
 
 - Wrong Atomic Design layer → `architecture-review`.
-- Component-level issue → `component-review`.
+- Component-level boundary → `component-review`.
 - State/effect ownership → `hook-state-review`.
 - Service/API/data flow → `data-boundary-review`.
-- Complexity or extraction quality → `complexity-refactoring` / `code-quality-review`.
-- Mechanical import/CSS/structure issue → corresponding `enforce-*` hook.
+- Naming/cohesion/abstraction → `code-quality-review`.
+- Structural decomposition → `complexity-refactoring`.
+- Mechanical import/CSS/structure issue → `enforce-*`.
+
+The receiving Skill owns the final disposition; do not bounce a finding back without new evidence.
 
 ## Non-Goals
 
-Do not create a Composition solely because JSX is large. Do not create abstractions for speculative reuse. Do not treat one existing implementation as an architectural standard.
+Do not create a Composition solely because JSX is large. Do not introduce speculative reuse. Do not treat one legacy implementation as the architecture standard.
+
+## Final Review Gate
+
+Before PASS, confirm route ownership, section responsibility, state ownership, data boundary, DS decision, CSS ownership, naming, and extraction risk were inspected.
