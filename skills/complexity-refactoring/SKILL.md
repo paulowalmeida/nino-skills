@@ -1,106 +1,79 @@
 ---
 name: complexity-refactoring
-description: Review structural complexity in nino-app and decide whether refactoring materially improves responsibility, cohesion, comprehension, and maintainability.
+description: Review structural complexity in nino-app and decide whether refactoring materially improves responsibility, cohesion, comprehension, coupling, and maintainability.
 ---
 
 # Complexity Refactoring
 
 ## Purpose
 
-Use structural metrics as evidence to identify potentially risky code, then decide semantically whether the code actually needs refactoring. The goal is better responsibility boundaries and comprehension, not smaller numbers.
+Use structural metrics as risk evidence and decide semantically whether refactoring is justified. The objective is better design, not smaller numbers.
 
 ## Authority
 
-Apply `CLAUDE.md`, applicable `.claude/rules/*`, `rules/coding.md`, `rules/architecture.md`, and objective `enforce-*` findings first. Static analysis is evidence; this Skill provides semantic judgment.
+Apply `CLAUDE.md`, applicable `rules/*`, then objective enforcement failures. Static analysis informs this Skill; it does not replace semantic judgment or override hard rules.
 
-## Inputs
+## Mandatory Review Sequence
 
-When available, inspect:
-
-- function/module LOC;
-- cyclomatic complexity;
-- cognitive complexity;
-- maximum nesting;
-- parameter count;
-- file size;
-- function category and architectural layer;
-- TSX composition context;
-- caller/callee relationships;
-- before/after structural metrics.
-
-## First Decision: Is Refactoring Required?
-
-A metric warning is not a refactoring mandate. Before changing code answer:
-
-1. What is the unit's dominant responsibility?
-2. Is that responsibility coherent?
-3. Is the complexity inherent to that responsibility or accidental?
-4. Is the function orchestration, implementation, or presentation composition?
-5. Which structural problem is actually harmful: branching, nesting, mixed responsibilities, side effects, data transformation, or coupling?
-6. Would another engineer understand the unit locally without reconstructing unrelated context?
-
-If the responsibility is coherent and the metric is explained by legitimate composition/orchestration, do not refactor merely to improve the number.
+1. Inspect the complete unit and its architectural layer.
+2. Capture available structural signals: LOC, cyclomatic, cognitive, nesting, parameters, file size, and relevant static metrics.
+3. Identify the dominant responsibility and its reasons to change.
+4. Determine whether complexity is inherent to a coherent workflow or accidental.
+5. Inspect callers/callees when extraction boundaries depend on external usage.
+6. Propose only semantic boundaries.
+7. Compare before/after structural **and** semantic quality.
+8. Record the final disposition.
 
 ## 9/10 Responsibility Gate
 
-Refactor when distinct responsibilities have different reasons to change, strong coupling makes reasoning difficult, or a meaningful semantic boundary can make the system easier to understand.
+Refactor when distinct responsibilities have materially different reasons to change, coupling makes reasoning difficult, or a meaningful boundary clearly improves comprehension.
 
-Strong signals include:
-
-- unrelated validation and persistence policy;
-- transport handling mixed with domain policy;
-- data acquisition mixed with unrelated presentation decisions;
-- independent business policies hidden in one branch tree;
-- side effects mixed with transformations that could remain pure;
-- unrelated workflows combined only because they happen sequentially.
+Strong signals include mixed validation/persistence policy, transport/domain mixing, unrelated presentation/data workflows, independent policies hidden in one branch tree, or effects mixed with pure transformation.
 
 Sequential steps in one coherent workflow are not automatically multiple responsibilities.
 
 ## Extraction Test
 
-An extraction is justified only when it creates a meaningful semantic boundary. Identify the responsibility, required inputs, owned output/effect, independent reason to change, and why the caller becomes easier to understand.
+Before extraction, identify:
 
-The extracted function/component MUST have a responsibility-derived name.
+- responsibility extracted;
+- genuine inputs;
+- owned output/effect;
+- independent reason to change;
+- semantic name;
+- why the caller becomes easier to understand.
 
-## Anti-Gaming
+If those cannot be stated clearly, do not extract.
 
-Reject decomposition that:
+## Anti-Gaming / Complexity Relocation
 
-- only lowers LOC or a metric;
-- moves the same branch tree to another function;
-- creates parameter plumbing solely to preserve old coupling;
-- creates wrappers that only forward arguments;
-- splits coherent linear workflows into arbitrary steps;
-- creates speculative abstractions without a real contract.
+Reject refactors that:
 
-A refactor that merely relocates complexity is not a successful refactor.
+- only lower LOC or metrics;
+- move the same branch tree elsewhere;
+- create parameter plumbing solely to preserve coupling;
+- create forwarding wrappers;
+- split coherent linear workflows arbitrarily;
+- create speculative abstractions;
+- distribute one complex responsibility across many tightly coupled helpers.
 
-## Cohesion and Caller Tests
+A lower metric with worse cohesion, readability, or coupling is a failed refactor.
 
-After extraction:
+## TSX Exception
 
-- every resulting unit must be more internally coherent;
-- each parameter must be necessary for the responsibility;
-- unrelated state must not be threaded through the boundary;
-- the caller should read at a higher level of abstraction without becoming opaque.
+Do not split a coherent component because JSX is verbose. Extract UI only when it has semantic identity, meaningful contract, independent behavior, or a clear architectural boundary. Arbitrary JSX fragments are not valid extraction targets merely because they are long.
 
-## TSX Composition Exception
+## Hook and Service Guidance
 
-Do not split a coherent TSX component solely because JSX is verbose. Extract UI when it has semantic identity, meaningful contract, independently understandable behavior, reuse value, or a clear architectural boundary.
+A Hook or Service may coordinate several operations when they form one coherent behavior/domain workflow. Split only when responsibilities become independently changeable or understandable. File size alone is not evidence.
 
-## Hooks and Services
+## Threshold Policy
 
-A Hook or Service may legitimately coordinate several operations when those operations form one coherent behavior/domain workflow. Split only when the responsibilities become independently changeable or independently understandable.
+Metrics are diagnostic unless the project explicitly defines a hard threshold. Never invent a threshold and present it as project policy. A warning requires semantic review; only an explicit hard gate creates a mandatory refactoring outcome.
 
-## Metrics and Thresholds
+## Before/After Gate
 
-Metrics are control signals, not universal definitions of good code. Do not invent thresholds and present them as objective truth. Project-calibrated thresholds may identify review priority, but a warning still requires semantic judgment unless an explicit hard gate exists.
-
-## Before/After Verification
-
-A refactor is successful only when semantic quality is maintained or improved and structural risk is meaningfully reduced.
-
-Compare:
+Compare both:
 
 ```text
 Structural
@@ -108,7 +81,7 @@ Structural
 - cyclomatic
 - cognitive complexity
 - nesting
-- parameters
+- parameter count
 
 Semantic
 - responsibility clarity
@@ -119,11 +92,17 @@ Semantic
 - indirection
 ```
 
-A lower metric with worse cohesion or readability is a failed refactor.
+The final implementation must preserve or improve semantic quality while meaningfully reducing structural risk when risk reduction was the reason for change.
+
+## Finding Classification
+
+Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
+
+`NEEDS-EVIDENCE` must identify the missing caller, metric, or architectural context. It is not a PASS.
 
 ## Evidence Standard
 
-Every finding MUST identify the structural signal, why it matters semantically, the proposed responsibility boundary, and the before/after evidence. Do not claim success from metrics alone.
+Every confirmed finding MUST identify the structural signal, why it matters semantically, proposed responsibility boundary, and before/after evidence. Never claim success from metrics alone.
 
 ## Handoffs
 
@@ -133,6 +112,12 @@ Every finding MUST identify the structural signal, why it matters semantically, 
 - Service/data boundary → `data-boundary-review`.
 - Naming/cohesion/abstraction → `code-quality-review`.
 
+The receiving Skill owns final disposition; no ping-pong without new evidence.
+
+## Final Review Gate
+
+Before PASS/complete, confirm the original complexity signal was understood, the semantic reason for refactoring is explicit, complexity was not relocated, caller comprehension improved, and applicable enforcement still passes.
+
 ## Final Principle
 
-> Metrics identify risk. They do not define good design. Refactor when responsibility, cohesion, nesting, coupling, or comprehensibility actually improves.
+> Metrics identify risk. They do not define good design. Refactor when responsibility, cohesion, coupling, nesting, or comprehensibility actually improves.
