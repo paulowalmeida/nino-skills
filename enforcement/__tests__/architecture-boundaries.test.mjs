@@ -21,35 +21,42 @@ function run() {
 
 try {
   write("UI/atoms/Button.tsx", 'import { useState } from "react";\nexport function Button() { return null; }\n');
-  write("UI/molecules/Search.tsx", 'export function Search() { return null; }\n');
-  write("UI/organisms/Table.tsx", 'export function Table() { return null; }\n');
-  write("states/useStore.ts", "export const store = {};\n");
+  write("UI/molecules/Search.tsx", "export function Search() { return null; }\n");
+  write("UI/organisms/Table.tsx", "export function Table() { return null; }\n");
+  write("states/useSessionStore.ts", "export const store = {};\n");
+  write("tsconfig.app.json", JSON.stringify({
+    compilerOptions: { baseUrl: ".", paths: { "@states/*": ["states/*"] } },
+  }));
 
   let result = run();
   assert.equal(result.status, 0, result.stderr);
 
-  write(
-    "UI/atoms/Invalid.tsx",
-    'import { store } from "../../states/useStore";\nexport function Invalid() { return store; }\n',
-  );
-
+  write("UI/atoms/InvalidRelative.tsx", 'import useStore from "../../states/useSessionStore";\n');
   result = run();
-  assert.equal(result.status, 1, "A presentation-layer state import must fail.");
+  assert.equal(result.status, 1, "A relative state import must fail.");
   assert.match(result.stderr, /presentation-cannot-import-state/);
 
-  write(
-    "services/Valid.ts",
-    'import { store } from "../states/useStore";\nexport function Valid() { return store; }\n',
-  );
-
+  fs.rmSync(path.join(tempRoot, "UI/atoms/InvalidRelative.tsx"));
+  write("UI/atoms/InvalidAlias.tsx", 'import useStore from "@states/useSessionStore";\n');
   result = run();
-  assert.equal(result.status, 1, "The existing invalid atom should still fail while service imports remain allowed.");
+  assert.equal(result.status, 1, "A tsconfig path alias to state must fail.");
 
-  fs.rmSync(path.join(tempRoot, "UI/atoms/Invalid.tsx"));
+  fs.rmSync(path.join(tempRoot, "UI/atoms/InvalidAlias.tsx"));
+  write("UI/atoms/InvalidReExport.ts", 'export { store } from "@states/useSessionStore";\n');
+  result = run();
+  assert.equal(result.status, 1, "A re-export of state must fail.");
+
+  fs.rmSync(path.join(tempRoot, "UI/atoms/InvalidReExport.ts"));
+  write("services/Valid.ts", 'import useStore from "@states/useSessionStore";\n');
   result = run();
   assert.equal(result.status, 0, result.stderr);
 
-  console.log("Architecture boundary checker tests passed.");
+  write("UI/atoms/Unresolved.tsx", 'import thing from "@states/missing";\n');
+  result = run();
+  assert.equal(result.status, 2, "Unresolved local imports must fail closed.");
+  assert.match(result.stderr, /unresolved import/);
 } finally {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 }
+
+console.log("Architecture boundary checker tests passed.");
