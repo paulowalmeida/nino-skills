@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
+import { runSkillHook } from './hook-kit.mjs'
+
 const match = (path) =>
   /\/src\/(elements|components|compositions|pages|layouts)\//.test(path) &&
   (path.endsWith('.tsx') || path.endsWith('.module.css'))
 
 const violations = (path, toolName, lines) => {
-  if (!match(path)) return []
-
   const found = []
   lines.forEach((line, index) => {
     const at = `linha ${index + 1} do trecho escrito`
@@ -17,4 +17,4 @@ const violations = (path, toolName, lines) => {
   return found
 }
 
-export { match, violations }
+await runSkillHook({ name: 'enforce-ui-accessibility', match, violations })
