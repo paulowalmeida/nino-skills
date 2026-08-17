@@ -3,13 +3,15 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
 const HOOKS_DIR = path.join(ROOT, 'hooks')
 const SKILLS_DIR = path.join(ROOT, 'skills')
+const COMPLEXITY_TOOL = path.join(HERE, 'complexity-analyzer.mjs')
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.css', '.scss', '.sass'])
+const COMPLEXITY_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 const DEFAULT_EXCLUDES = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '.next', 'out'])
 
 const hookFiles = () =>
@@ -70,6 +72,19 @@ const runHook = (hook, file, root) => {
   return []
 }
 
+const analyzeComplexity = async (files, root) => {
+  if (!fs.existsSync(COMPLEXITY_TOOL)) return { metrics: [], error: 'complexity-analyzer.mjs not found' }
+  const { analyzeSource } = await import(pathToFileURL(COMPLEXITY_TOOL).href)
+  const metrics = []
+  for (const file of files) {
+    if (!COMPLEXITY_EXTENSIONS.has(path.extname(file))) continue
+    const relative = path.relative(root, file).replaceAll(path.sep, '/')
+    const functions = await analyzeSource(file)
+    metrics.push(...functions.map((metric) => ({ file: `nino-app/${relative}`, ...metric })))
+  }
+  return { metrics, error: null }
+}
+
 const listSemanticSkills = () =>
   fs.readdirSync(SKILLS_DIR, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -78,12 +93,14 @@ const listSemanticSkills = () =>
     .sort()
     .map((name) => ({ name, skillFile: `skills/${name}/SKILL.md` }))
 
-const printTextReport = ({ root, files, hooks, violations, hookErrors, semanticSkills }) => {
+const printTextReport = ({ root, files, hooks, violations, hookErrors, semanticSkills, complexity }) => {
   console.log(`Audit root: ${root}`)
   console.log(`Files scanned: ${files}`)
   console.log(`Enforcement hooks: ${hooks}`)
   console.log(`Mechanical violations: ${violations}`)
   console.log(`Hook errors: ${hookErrors}`)
+  console.log(`Complexity functions analyzed: ${complexity.metrics.length}`)
+  if (complexity.error) console.log(`Complexity analyzer error: ${complexity.error}`)
   console.log('')
 
   if (violations.length > 0) {
@@ -95,15 +112,21 @@ const printTextReport = ({ root, files, hooks, violations, hookErrors, semanticS
     console.log('')
   }
 
+  if (complexity.metrics.length > 0) {
+    console.log('=== Complexity signals ===')
+    console.log(JSON.stringify(complexity.metrics, null, 2))
+    console.log('')
+  }
+
   console.log('=== Semantic review required ===')
   for (const skill of semanticSkills) {
     console.log(`- ${skill.name} (${skill.skillFile})`)
   }
-  console.log('\nSemantic Skills are intentionally not converted into regex checks.')
-  console.log('They require agent judgment against the existing code and the Skill instructions.')
+  console.log('\nSemantic Skills are intentionally not converted into regex checks or arbitrary thresholds.')
+  console.log('Review them using their SKILL.md instructions and the reported structural evidence.')
 }
 
-const main = () => {
+const main = async () => {
   const args = process.argv.slice(2)
   const json = args.includes('--json')
   const targets = args.filter((arg) => !arg.startsWith('--'))
@@ -127,14 +150,17 @@ const main = () => {
     }
   }
 
+  const complexity = await analyzeComplexity(files, root)
   const report = {
     root,
     filesScanned: files.length,
     hooks: hooks.map((hook) => path.basename(hook)),
     mechanical: { violations, hookErrors },
     semanticSkills: listSemanticSkills(),
+    complexity,
     notes: [
       'Mechanical checks reuse the same enforce-* hooks used by Write/Edit enforcement.',
+      'Complexity metrics are evidence for the complexity-refactoring Skill; they are not automatic refactoring verdicts.',
       'Semantic Skills are reported for deliberate retrospective review; they are not approximated with regexes.',
       'Existing-code audit does not modify files.',
     ],
@@ -142,7 +168,7 @@ const main = () => {
 
   if (json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-    process.exit(hookErrors.length > 0 ? 2 : 0)
+    process.exit(hookErrors.length > 0 || complexity.error ? 2 : 0)
   }
 
   printTextReport({
@@ -152,9 +178,10 @@ const main = () => {
     violations,
     hookErrors,
     semanticSkills: report.semanticSkills,
+    complexity,
   })
 
-  process.exit(hookErrors.length > 0 ? 2 : 0)
+  process.exit(hookErrors.length > 0 || complexity.error ? 2 : 0)
 }
 
-main()
+await main()
