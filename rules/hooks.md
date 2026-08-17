@@ -4,6 +4,8 @@ This file defines mandatory rules for React Hooks, custom Hooks, local UI state,
 
 React-specific rules in this file are grounded in the official React documentation. Zustand-specific implementation facts are grounded in the official Zustand documentation. Nino-specific rules define application-state boundaries and are additional project constraints.
 
+Existing implementation in `nino-app/apps/manager` is repository evidence, not automatic architectural precedent. New or modified code MUST follow these rules even when legacy code does not.
+
 Official references:
 - React Rules of Hooks: https://react.dev/reference/rules/rules-of-hooks
 - React Rules: https://react.dev/reference/rules
@@ -21,21 +23,13 @@ The agent **MUST** follow React's Rules of Hooks exactly.
 
 Hooks MUST:
 
-- be called only at the top level of a React component or Custom Hook;
+- be called only at the top level of a React function component or Custom Hook;
 - be called in the same order on every render;
-- be called only from React function components or Custom Hooks;
 - preserve the normal Rules of Hooks across every execution path.
 
-Hooks MUST NOT be called:
+Hooks MUST NOT be called inside conditions, loops, nested callbacks, event handlers, ordinary non-Hook helpers, class components, or `try`/`catch`/`finally` blocks.
 
-- inside conditions;
-- inside loops;
-- inside nested callbacks;
-- inside event handlers;
-- inside ordinary helper functions that are not Custom Hooks;
-- inside class components;
-- after an early return that would make the call order conditional;
-- inside `try`, `catch`, or `finally` blocks.
+A Hook call MUST NOT be placed after a conditional early return when that changes whether the Hook executes.
 
 The agent **MUST NOT** bypass the Rules of Hooks by wrapping a Hook call in another function, alias, callback, or conditional abstraction.
 
@@ -45,20 +39,20 @@ The project's official React Hooks linting rules **MUST** be enabled for applica
 
 A Custom Hook is a function whose primary responsibility is encapsulating reusable React stateful behavior or Hook composition.
 
-Every Custom Hook **MUST** have one coherent responsibility and **MUST** follow `rules/coding.md`, including the project's Single Responsibility and CodeMetrics requirements.
+Every Custom Hook **MUST** have one coherent responsibility and **MUST** follow `rules/coding.md`, including its Single Responsibility requirement and applicable structural-complexity review.
 
 A Custom Hook **MUST NOT** become a collection of unrelated domain operations merely because those operations can be reached from the same component.
 
 Examples:
 
 ```text
-useOrders()                  ✅ one responsibility
-useCreateOrder()             ✅ one responsibility
-useOrdersAndPermissions()    ❌ unrelated responsibilities
-useUserProfileAndBilling()   ❌ unrelated responsibilities
+useOrders()                  one coherent responsibility
+useCreateOrder()             one coherent responsibility
+useOrdersAndPermissions()    unrelated responsibilities
+useUserProfileAndBilling()   unrelated responsibilities
 ```
 
-When a Custom Hook accumulates distinct operations or reasons to change, the agent **MUST** split the responsibilities into separate Hooks or lower-level operations rather than continuing to enlarge the same Hook.
+When a Custom Hook accumulates distinct responsibilities or independent reasons to change, the agent **SHOULD** separate those responsibilities into cohesive Hooks or lower-level operations. A metric warning alone is **NOT** sufficient justification for extraction.
 
 A Custom Hook **MUST NOT** be used as an architectural escape hatch to bypass component-layer restrictions defined by `rules/architecture.md`.
 
@@ -82,9 +76,7 @@ Local UI state **MUST NOT** be used to hide application state, domain state, ser
 
 Zustand is the project's source of truth for application state when the application-state architecture requires shared client state.
 
-Official Zustand documentation states that a store created with `create` is a Hook-shaped consumer interface and that components consume selected state through that Hook. citeturn523164search0
-
-A Zustand store normally exposes a Hook-shaped consumer interface. The fact that a store consumer is a Hook **MUST NOT** cause it to be treated as an ordinary local React Hook for architectural purposes.
+A Zustand store normally exposes a Hook-shaped consumer interface. The fact that a store consumer is a Hook **MUST NOT** cause it to be treated as ordinary local React state for architectural purposes.
 
 For this project:
 
@@ -134,23 +126,9 @@ A prohibited component **MUST NOT** obtain application state through:
 - a Store Hook re-exported from another module;
 - a wrapper that calls the Store Hook internally and exposes it to the prohibited component;
 - an alias created only to hide the Zustand import;
-- a helper or utility whose sole purpose is to conceal the Store Hook access;
+- a helper or utility whose sole purpose is to conceal Store Hook access;
 - an intermediary component created solely to bypass the boundary;
 - a context/provider whose only purpose is to smuggle the Store Hook into a prohibited component.
-
-Example:
-
-```tsx
-// ❌ forbidden: Atom receives the Store Hook itself
-<SaveButton storeHook={useUserStore} />
-```
-
-```tsx
-// ❌ forbidden: wrapper hides direct Zustand consumption from an Organism
-function useOrganismState() {
-  return useUserStore()
-}
-```
 
 The prohibition follows the dependency itself, not merely the import statement.
 
@@ -185,8 +163,6 @@ Authorized consumers **MUST** consume only the application state needed for thei
 
 A component **MUST NOT** subscribe to a broad portion of the store merely because it is convenient when a narrower selector can express the actual requirement.
 
-Zustand's documented model supports selecting the relevant slice of store state for a consuming component. citeturn523164search0turn523164search1
-
 When using Zustand selectors, the agent **SHOULD** select the smallest relevant state required by the component or Hook.
 
 The agent **MUST NOT** move application-state logic into Atoms, Molecules, or Organisms merely to reduce code in the authorized consumer.
@@ -206,28 +182,6 @@ Until an explicit server-state rule exists, do not invent an additional endpoint
 A Custom Hook **MAY** call other Hooks when that composition is part of the Custom Hook's single responsibility and complies with React's Rules of Hooks.
 
 A Custom Hook **MUST NOT** combine unrelated Hooks solely to create a convenient catch-all API.
-
-Example:
-
-```text
-useOrderForm()
-  ├─ useOrderDraft()
-  └─ useOrderValidation()
-```
-
-is coherent when both concerns belong to the order-form behavior.
-
-By contrast:
-
-```text
-useEverything()
-  ├─ useOrders()
-  ├─ usePermissions()
-  ├─ useNotifications()
-  └─ useBilling()
-```
-
-is forbidden when those concerns are unrelated.
 
 ## Hook Naming
 
@@ -255,7 +209,7 @@ Before completing Hook or state-related work, the agent **MUST**:
 
 1. verify compliance with React's Rules of Hooks;
 2. verify the Custom Hook's Single Responsibility;
-3. verify the applicable CodeMetrics complexity rule;
+3. inspect applicable structural complexity signals when the changed Hook is a relevant hotspot;
 4. identify every direct Zustand Store Hook consumer introduced or modified;
 5. verify that each direct consumer is an authorized category;
 6. verify that no prohibited component receives or obtains a Store Hook indirectly;
@@ -274,21 +228,21 @@ The following rules **MUST** be protected mechanically whenever technically poss
 - indirect Store Hook access where objective AST analysis can identify it;
 - forbidden re-exports or wrapper-based boundary circumvention;
 - Custom Hook naming and location conventions where the project defines them;
-- CodeMetrics complexity limits defined by `rules/coding.md`.
+- structural-complexity signals through the project's complexity analyzer.
 
-Any objective violation **MUST** fail the relevant check.
+Objective violations **MUST** fail the relevant check.
 
 The agent **MUST** fix the implementation rather than weaken, disable, suppress, or bypass the enforcement.
 
+Complexity findings MUST follow the layered policy in `rules/coding.md`: a metric signal does not automatically require decomposition, and semantic refactoring decisions belong to the `complexity-refactoring` Skill.
+
 ## External Technical Authority
 
-React behavior and Rules of Hooks **MUST** follow the official React documentation linked at the top of this file. citeturn927825search5turn927825search9
+React behavior and Rules of Hooks **MUST** follow the official React documentation linked at the top of this file.
 
-Zustand's store-as-Hook and selector behavior **MUST** be interpreted according to the official Zustand documentation linked at the top of this file. citeturn523164search0turn523164search1
+Zustand's store-as-Hook and selector behavior **MUST** be interpreted according to the official Zustand documentation linked at the top of this file.
 
 Nino-specific application-state rules in this file are project constraints and are not presented as React or Zustand requirements.
-
-When a React or Zustand rule and a Nino-specific state rule address different concerns, both apply.
 
 ## Final Rule
 
