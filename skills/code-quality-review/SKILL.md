@@ -64,7 +64,15 @@ Do not refactor because a number feels high, a file looks unfamiliar, or a diffe
 
 Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
 
-`NEEDS-EVIDENCE` must state the missing caller/context evidence. Never convert an unresolved subjective concern into FAIL or PASS without evidence.
+## Resolution Protocol
+
+- **VIOLATION:** provide exact evidence, concrete maintenance risk, and focused correction.
+- **LEGACY:** identify the out-of-scope defect; it MUST NOT justify new weak code.
+- **EXCEPTION:** record explicit project authorization and exact scope. No convenience or inferred exceptions.
+- **NEEDS-EVIDENCE:** identify missing caller/context evidence and the next concrete inspection. It remains unresolved until evidence is obtained or review is explicitly closed as incomplete.
+- **PASS:** may be declared only after the Final Review Gate is satisfied.
+
+An unresolved `NEEDS-EVIDENCE` item MUST NOT be silently converted to PASS. If required evidence cannot be obtained, final status is **INCOMPLETE**.
 
 ## Evidence Standard
 
@@ -86,4 +94,4 @@ Do not refactor merely to make code look different. Do not force DRY, abstractio
 
 ## Final Review Gate
 
-Before PASS, confirm naming, comments, abstraction justification, cohesion, caller readability, duplication risk, and existing-solution search were inspected.
+Before PASS/complete, confirm naming, comments, abstraction justification, cohesion, caller readability, duplication risk, existing-solution search, applicable enforcement, and resolution of all `NEEDS-EVIDENCE` items were inspected. Unresolved required evidence produces INCOMPLETE.
