@@ -3,9 +3,50 @@
     {
       "id": "presentation-cannot-import-state",
       "severity": "block",
+      "mode": "transitive",
       "sourceDirectories": ["UI/atoms", "UI/molecules", "UI/organisms"],
       "targetDirectories": ["states"],
       "message": "Presentation components must not depend on state modules, directly or transitively."
+    },
+    {
+      "id": "atom-cannot-compose-higher-ui",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["UI/atoms"],
+      "targetDirectories": ["UI/molecules", "UI/organisms", "UI/templates", "UI/pages"],
+      "message": "Atoms must not directly compose higher UI layers."
+    },
+    {
+      "id": "molecule-cannot-compose-peer-or-higher-ui",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["UI/molecules"],
+      "targetDirectories": ["UI/molecules", "UI/organisms", "UI/templates", "UI/pages"],
+      "message": "Molecules must not directly compose molecules, organisms, templates, or pages."
+    },
+    {
+      "id": "organism-cannot-compose-peer-or-higher-ui",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["UI/organisms"],
+      "targetDirectories": ["UI/organisms", "UI/templates", "UI/pages"],
+      "message": "Organisms must not directly compose organisms, templates, or pages."
+    },
+    {
+      "id": "template-cannot-compose-template-or-page",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["UI/templates"],
+      "targetDirectories": ["UI/templates", "UI/pages"],
+      "message": "Templates must not directly compose templates or pages."
+    },
+    {
+      "id": "page-cannot-compose-below-template",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["UI/pages"],
+      "targetDirectories": ["UI/organisms", "UI/molecules", "UI/atoms"],
+      "message": "Pages must compose through a Template and must not directly compose lower UI layers."
     }
   ]
 }
