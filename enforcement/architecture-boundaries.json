@@ -9,12 +9,12 @@
       "message": "Presentation components must not depend on state modules, directly or transitively."
     },
     {
-      "id": "atom-cannot-compose-higher-ui",
+      "id": "atom-cannot-compose-peer-or-higher-ui",
       "severity": "block",
       "mode": "direct",
       "sourceDirectories": ["UI/atoms"],
-      "targetDirectories": ["UI/molecules", "UI/organisms", "UI/templates", "UI/pages"],
-      "message": "Atoms must not directly compose higher UI layers."
+      "targetDirectories": ["UI/atoms", "UI/molecules", "UI/organisms", "UI/templates", "UI/pages"],
+      "message": "Atoms must not directly compose another application Atom or any higher UI layer."
     },
     {
       "id": "molecule-cannot-compose-peer-or-higher-ui",
@@ -33,7 +33,7 @@
       "message": "Organisms must not directly compose organisms, templates, or pages."
     },
     {
-      "id": "template-cannot-compose-template-or-page",
+      "id": "template-cannot-compose-peer-or-higher-ui",
       "severity": "block",
       "mode": "direct",
       "sourceDirectories": ["UI/templates"],
@@ -41,12 +41,20 @@
       "message": "Templates must not directly compose templates or pages."
     },
     {
-      "id": "page-cannot-compose-below-template",
+      "id": "page-cannot-compose-peer-or-below-template",
       "severity": "block",
       "mode": "direct",
       "sourceDirectories": ["UI/pages"],
-      "targetDirectories": ["UI/organisms", "UI/molecules", "UI/atoms"],
-      "message": "Pages must compose through a Template and must not directly compose lower UI layers."
+      "targetDirectories": ["UI/pages", "UI/organisms", "UI/molecules", "UI/atoms"],
+      "message": "Pages must not directly compose another Page or lower UI layers; composition must go through a Template."
+    },
+    {
+      "id": "layout-cannot-compose-ui-below-page",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["UI/layouts"],
+      "targetDirectories": ["UI/layouts", "UI/templates", "UI/organisms", "UI/molecules", "UI/atoms"],
+      "message": "Layouts must compose Pages and must not directly compose lower UI layers."
     }
   ]
 }
