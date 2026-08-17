@@ -63,6 +63,16 @@ Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVID
 
 `NEEDS-EVIDENCE` must name the missing behavior contract, dependency, or execution path. It is not a soft PASS.
 
+## Resolution Protocol
+
+- **VIOLATION:** provide the concrete risk and focused correction.
+- **LEGACY:** identify the out-of-scope defect; it MUST NOT justify new weak tests.
+- **EXCEPTION:** record explicit project authorization and scope. Do not infer exceptions from convenience.
+- **NEEDS-EVIDENCE:** identify the missing contract/execution evidence and next concrete inspection. It remains unresolved until obtained or explicitly closed as incomplete.
+- **PASS:** may be declared only after the Final Review Gate is satisfied.
+
+An unresolved `NEEDS-EVIDENCE` item MUST NOT be silently treated as PASS. If required evidence cannot be obtained, final status is **INCOMPLETE**.
+
 ## Evidence Standard
 
 Every confirmed finding MUST include exact test location, intended contract, current boundary, concrete blind spot/coupling, regression risk, and focused improvement. Retrospective PASS requires inspection of the relevant test and implementation contract, not test-name inference alone.
@@ -83,4 +93,4 @@ Do not equate coverage percentage with quality. Do not add tests for trivial imp
 
 ## Final Review Gate
 
-Before PASS, confirm the contract, boundary, success/failure coverage, mock boundary, selector/assertion stability, setup clarity, and regression signal were inspected.
+Before PASS, confirm the contract, boundary, success/failure coverage, mock boundary, selector/assertion stability, setup clarity, regression signal, and objective enforcement results were inspected.
