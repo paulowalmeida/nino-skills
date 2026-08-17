@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { runSkillHook } from './hook-kit.mjs'
+
 const match = (path) => path.endsWith('.module.css')
 
 const TOKEN_BY_HEX = {
@@ -11,8 +13,6 @@ const TOKEN_BY_HEX = {
 }
 
 const violations = (path, toolName, lines) => {
-  if (!match(path)) return []
-
   const found = []
   lines.forEach((line, index) => {
     const at = `linha ${index + 1} do trecho escrito`
@@ -33,4 +33,4 @@ const violations = (path, toolName, lines) => {
   return found
 }
 
-export { match, violations }
+await runSkillHook({ name: 'enforce-css', match, violations })
