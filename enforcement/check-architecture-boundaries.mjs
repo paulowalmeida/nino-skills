@@ -1,17 +1,8 @@
 #!/usr/bin/env node
 
-/**
- * Mechanical architecture-boundary checker.
- *
- * This checker intentionally verifies only import boundaries. It does not
- * attempt to decide semantic responsibility, cohesion, or component quality.
- *
- * Usage:
- *   node enforcement/check-architecture-boundaries.mjs <project-src-root>
- */
-
 import fs from "node:fs";
 import path from "node:path";
+import { extractImports, lineAt, loadTsConfig, resolveImport, SOURCE_EXTENSIONS } from "./module-graph.mjs";
 
 const root = process.argv[2];
 
@@ -21,66 +12,80 @@ if (!root) {
 }
 
 const sourceRoot = path.resolve(root);
-
-if (!fs.existsSync(sourceRoot)) {
-  console.error(`Source root does not exist: ${sourceRoot}`);
+if (!fs.existsSync(sourceRoot) || !fs.statSync(sourceRoot).isDirectory()) {
+  console.error(`Source root does not exist or is not a directory: ${sourceRoot}`);
   process.exit(2);
 }
 
-const rules = [
+const config = loadTsConfig(sourceRoot);
+const violations = [];
+const unresolved = [];
+
+const layerRules = [
   {
-    name: "presentation-cannot-import-zustand",
-    directories: ["UI/atoms", "UI/molecules", "UI/organisms"],
-    forbidden: /(?:^|[/\\])(?:useStore|stores?|store)(?:[/\\]|\.|$)/i,
-    message: "Presentation components must not import Zustand/store modules directly.",
+    name: "presentation-cannot-import-state",
+    sourceDirectories: ["UI/atoms", "UI/molecules", "UI/organisms"],
+    targetDirectories: ["states"],
+    message: "Presentation components must not import state modules directly.",
   },
 ];
 
-const extensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs"]);
-const violations = [];
-
+const files = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) walk(fullPath);
-    else if (extensions.has(path.extname(entry.name))) inspect(fullPath);
+    else if (SOURCE_EXTENSIONS.includes(path.extname(entry.name))) files.push(fullPath);
   }
 }
+walk(sourceRoot);
 
-function inspect(file) {
-  const relative = path.relative(sourceRoot, file).split(path.sep).join("/");
+function relative(file) {
+  return path.relative(sourceRoot, file).split(path.sep).join("/");
+}
+
+function inDirectory(file, directory) {
+  const value = relative(file);
+  return value === directory || value.startsWith(`${directory}/`);
+}
+
+for (const file of files) {
   const source = fs.readFileSync(file, "utf8");
 
-  for (const rule of rules) {
-    if (!rule.directories.some((directory) => relative === directory || relative.startsWith(`${directory}/`))) continue;
+  for (const { specifier, index } of extractImports(source)) {
+    if (!specifier.startsWith(".") && !specifier.startsWith("@")) continue;
 
-    const importPattern = /(?:import\s+(?:[^;]*?\s+from\s+)?|export\s+[^;]*?\s+from\s+|require\s*\(\s*)(["'])([^"']+)\1/g;
-    let match;
+    const resolved = resolveImport(specifier, file, config);
+    if (!resolved) {
+      unresolved.push({ file: relative(file), line: lineAt(source, index), specifier });
+      continue;
+    }
 
-    while ((match = importPattern.exec(source))) {
-      const specifier = match[2];
-      if (!rule.forbidden.test(specifier)) continue;
+    for (const rule of layerRules) {
+      if (!rule.sourceDirectories.some((directory) => inDirectory(file, directory))) continue;
+      if (!rule.targetDirectories.some((directory) => inDirectory(resolved, directory))) continue;
 
-      const line = source.slice(0, match.index).split("\n").length;
       violations.push({
-        file: relative,
-        line,
+        file: relative(file),
+        line: lineAt(source, index),
         rule: rule.name,
         message: rule.message,
         import: specifier,
+        target: relative(resolved),
       });
     }
   }
 }
 
-walk(sourceRoot);
-
 for (const violation of violations) {
-  console.error(`${violation.file}:${violation.line} [BLOCK] ${violation.rule}: ${violation.message} (${violation.import})`);
+  console.error(`${violation.file}:${violation.line} [BLOCK] ${violation.rule}: ${violation.message} (${violation.import} → ${violation.target})`);
 }
 
-if (violations.length > 0) {
-  process.exit(1);
+if (unresolved.length > 0) {
+  console.error(`Unable to resolve ${unresolved.length} local import(s). These are errors so boundary checks cannot silently pass unresolved imports.`);
+  for (const item of unresolved) console.error(`${item.file}:${item.line} [ERROR] unresolved import: ${item.specifier}`);
+  process.exit(2);
 }
 
+if (violations.length > 0) process.exit(1);
 console.log("Architecture boundary check passed.");
