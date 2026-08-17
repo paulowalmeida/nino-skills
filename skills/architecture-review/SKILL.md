@@ -57,17 +57,23 @@ Do **not** report a violation solely because:
 
 Ask: **what has the same reason to change?** Responsibilities with materially different reasons to change should not be forced behind one boundary. Conversely, do not split a coherent workflow merely because it contains several steps.
 
-## Exception / Finding Classification
+## Finding Classification
 
-Every review item MUST end as exactly one of:
+Every review item MUST end as exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
 
-- **VIOLATION** — rule/boundary is demonstrably broken.
-- **LEGACY** — violates the target architecture but is outside the current task scope; do not use as precedent.
-- **EXCEPTION** — intentional deviation with explicit project authorization; record the authorization.
-- **NEEDS-EVIDENCE** — plausible concern, but required context is missing.
-- **PASS** — inspected and no applicable violation found.
+- **VIOLATION:** demonstrably breaks a rule/boundary.
+- **LEGACY:** violates the target architecture but is outside the current task; never use it as precedent.
+- **EXCEPTION:** intentional deviation with explicit project authorization and explicit scope.
+- **NEEDS-EVIDENCE:** plausible concern with missing required evidence.
+- **PASS:** sufficient inspection found no applicable violation.
 
-A `NEEDS-EVIDENCE` result must identify exactly what must be inspected next. Do not downgrade uncertainty to PASS.
+## Resolution Protocol
+
+A `NEEDS-EVIDENCE` item MUST name the missing evidence and the next concrete inspection. It remains unresolved until that evidence is obtained or the review is explicitly closed as incomplete.
+
+A review MUST NOT end by silently converting `NEEDS-EVIDENCE` into `PASS`. If required evidence cannot be obtained, the final status is **INCOMPLETE**.
+
+An `EXCEPTION` without explicit authorization is not an exception; classify it as `NEEDS-EVIDENCE` until authorization is established.
 
 ## Evidence Standard
 
@@ -92,11 +98,4 @@ Do not create layers for convenience, introduce speculative abstractions, or use
 
 ## Final Review Gate
 
-Before declaring the review complete, confirm:
-
-- scope was fully inspected;
-- every finding has a disposition;
-- no mechanical failure was reclassified as subjective;
-- `NEEDS-EVIDENCE` items name the missing evidence;
-- proposed corrections restore responsibility instead of relocating it;
-- the result is limited to what the rules and inspected evidence support.
+Before PASS/complete, confirm scope was fully inspected, applicable enforcement was considered, every finding has a disposition, no mechanical failure was reclassified as subjective, all `NEEDS-EVIDENCE` items are resolved or explicitly reported as INCOMPLETE, and proposed corrections restore responsibility instead of relocating it.
