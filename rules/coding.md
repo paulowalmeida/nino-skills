@@ -6,6 +6,17 @@ When a rule in this file applies, the agent **MUST** obey it.
 
 The absence of explicit permission **MUST NOT** be interpreted as permission to create an exception.
 
+## External Technical Foundations
+
+Some rules in this file are aligned with official technical guidance:
+
+- React Rules: Components and Hooks must be pure; side effects belong outside render; Hooks have strict usage rules. Official reference: `https://react.dev/reference/rules`
+- React Rules of Hooks: `https://react.dev/reference/rules/rules-of-hooks`
+- TypeScript Handbook: type assertions affect static checking and do not perform runtime validation. Official reference: `https://www.typescriptlang.org/docs/handbook/2/everyday-types.html`
+- ESLint complexity rule: official reference for cyclomatic-complexity concepts and configurable thresholds: `https://eslint.org/docs/latest/rules/complexity`
+
+These sources provide technical foundations, but **Nino project rules may be stricter**. When an explicit Nino rule differs from an external recommendation, the Nino rule wins.
+
 ## Core Principle
 
 Code **MUST** be written for the current requirement, existing project conventions, and long-term maintainability.
@@ -40,7 +51,9 @@ When a function begins accumulating distinct responsibilities, the agent **MUST 
 
 The project's authoritative function-complexity metric is the **CodeMetrics collected-complexity calculation** used by the VS Code extension published as `kisstkondoros.vscode-codemetrics`.
 
-CodeMetrics computes complexity from the source **AST**: it parses the source, walks AST nodes, and applies the configured contribution for each node to produce a collected-complexity value for the analyzed function/method. The project **MUST use that same measurement model** rather than substituting a different definition of cyclomatic, cognitive, or algorithmic complexity. citeturn849916search0
+CodeMetrics computes complexity from the source **AST**: it parses the source, walks AST nodes, and applies the configured contribution for each node to produce a collected-complexity value for the analyzed function/method.
+
+The project **MUST use that same measurement model** rather than substituting a different definition of cyclomatic, cognitive, or algorithmic complexity.
 
 ### Authoritative implementation
 
@@ -55,11 +68,11 @@ Languages: TypeScript / TSX / JavaScript / JSX
 Threshold: 5
 ```
 
-The referenced CodeMetrics release uses `tsmetrics-core` 1.4.1 and includes TypeScript/TSX/JavaScript/JSX support. citeturn608562search0
+The exact implementation and configuration are part of the project rule.
 
-The project **MUST NOT** treat the extension's visual severity colors, CodeLens display threshold, or any other presentation setting as the complexity rule. The authoritative value is the **collected complexity of the individual function**.
+The project **MUST NOT** treat the extension's visual severity colors, CodeLens display settings, editor decorations, or other presentation settings as the complexity rule. The authoritative value is the **collected complexity of the individual function**.
 
-The exact implementation/configuration is authoritative. If the repository later vendors or reproduces this calculation, the reproduction **MUST match the pinned implementation and configuration** rather than inventing a new formula.
+If the repository later vendors or reproduces the calculation, that implementation **MUST match the pinned measurement model and configuration** rather than introducing a new formula.
 
 ### Hard threshold
 
@@ -98,8 +111,8 @@ The agent **MUST NOT**:
 - replace the CodeMetrics score with a manually calculated number;
 - substitute another analyzer merely because it reports a lower value;
 - ignore a function because the editor does not currently display a CodeLens for it;
-- use `IgnoredFunctionNames` or another exclusion setting to bypass the rule;
-- change CodeMetrics node weights or function exclusions to make code pass the threshold.
+- use function-name exclusions or equivalent configuration to bypass the rule;
+- change CodeMetrics node weights, exclusions, or thresholds to make code pass.
 
 ### Function coverage and analyzer limitations
 
@@ -120,10 +133,18 @@ This exception:
 - MUST NOT be used by Hooks, handlers, selectors, Services, utilities, callbacks, or business-logic functions;
 - MUST NOT be used merely because a function happens to live in a `.tsx` file.
 
+### React purity and render-time rules
+
+Components and Hooks **MUST remain pure with respect to rendering**. Code executed during render **MUST NOT perform side effects that affect external systems or mutate data outside the component's local render state.
+
+Side effects such as network requests, subscriptions, timers, DOM mutations, logging with externally meaningful side effects, persistence, and external mutations **MUST NOT be performed during render**. They belong in the appropriate effect/event/infrastructure layer.
+
+Authoritative React foundation: `https://react.dev/reference/rules`
+
 Example:
 
 ```tsx
-// ✅ exception may apply: primary responsibility is TSX composition
+// ✅ composition-only render
 return (
   <View>
     {conditionA && <A />}
@@ -133,7 +154,7 @@ return (
 ```
 
 ```ts
-// ❌ no exception: function performs business/processing logic
+// ❌ no TSX exception: business/processing logic
 function processOrder(order: Order) {
   // CodeMetrics collected complexity MUST remain ≤ 5
 }
@@ -183,6 +204,7 @@ The agent:
 
 - **MUST NOT use `any`** when a concrete or safely generic type can be expressed;
 - **MUST NOT use type assertions to silence a type error without verifying the actual runtime contract**;
+- **MUST understand that a type assertion does not perform runtime validation**;
 - **MUST prefer narrow types over broad types**;
 - **MUST preserve discriminated unions and literal types when they carry meaningful constraints**;
 - **MUST NOT weaken a type merely to make an implementation compile**.
@@ -191,7 +213,7 @@ Unsafe patterns include:
 
 ```ts
 const value = something as any      // ❌
-const value = something as SomeType // ❌ when not verified
+const value = something as SomeType // ❌ when the runtime invariant was not verified
 ```
 
 A type error that exposes a real contract mismatch **MUST be fixed at the contract or implementation**, not hidden with an assertion.
@@ -262,7 +284,7 @@ Business logic **MUST NOT** be hidden behind a misleading utility name, componen
 
 ## Constants and Configuration
 
-Values with business or application meaning **MUST be named and centralized when they are reused or represent policy**.
+Values with business or application meaning **MUST** be named and centralized when they are reused or represent policy.
 
 The agent **MUST NOT** scatter duplicated literals when a named constant, configuration object, enum, or domain representation is more accurate.
 
@@ -356,7 +378,7 @@ Temporary code **MUST** be explicitly temporary and MUST NOT be left in a finish
 
 There is no universal maximum number of lines that automatically makes code incorrect.
 
-However, the agent **MUST treat growing size and complexity as a signal to reassess responsibility**.
+However, the agent **MUST** treat growing size and complexity as a signal to reassess responsibility.
 
 A file or function that becomes difficult to understand because it contains multiple responsibilities **MUST** be decomposed by responsibility, not arbitrarily by line count.
 
@@ -394,10 +416,11 @@ Before completing a coding task, the agent **MUST**:
 3. verify that every non-exempt individual function has CodeMetrics collected complexity ≤ 5 according to the pinned implementation;
 4. confirm that any complexity exception is limited to the TSX composition/render function and is not hiding complexity in helpers;
 5. confirm that the CodeMetrics implementation/configuration was not modified to make the code pass;
-6. verify that types and contracts remain correct;
-7. verify that no forbidden workaround or dependency was introduced;
-8. run the relevant typecheck, lint, complexity, tests, or other available checks;
-9. inspect the final diff for unrelated changes.
+6. verify React purity and absence of side effects during render where applicable;
+7. verify that types and contracts remain correct;
+8. verify that no forbidden workaround or dependency was introduced;
+9. run the relevant typecheck, lint, complexity, tests, or other available checks;
+10. inspect the final diff for unrelated changes.
 
 Passing automated checks does not replace reviewing the implementation against these rules.
 
@@ -414,12 +437,11 @@ The following rules **MUST be protected mechanically whenever technically possib
 - unused code and imports;
 - type errors;
 - prohibited export patterns;
-- architecture-specific file/folder conventions.
-
-The enforcement implementation **MUST use the same authoritative CodeMetrics calculation and pinned version/configuration as this rule**. A different complexity engine MUST NOT be used as a silent substitute.
+- architecture-specific file/folder conventions;
+- React Rules of Hooks and render-purity constraints where mechanically detectable.
 
 When an automated check fails, the agent **MUST fix the implementation rather than weaken the check**.
 
 ## Final Rule
 
-> **Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, keeps every individual function single-purpose and within the authoritative CodeMetrics complexity limit, avoids speculative abstraction, and leaves no hidden error or unrelated change behind.**
+> **Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, keeps every individual function single-purpose and within the authoritative CodeMetrics complexity limit, respects React purity, avoids speculative abstraction, and leaves no hidden error or unrelated change behind.**
