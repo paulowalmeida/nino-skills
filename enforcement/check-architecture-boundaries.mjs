@@ -5,8 +5,10 @@ import path from "node:path";
 import { extractImports, lineAt, loadTsConfig, resolveImport, SOURCE_EXTENSIONS } from "./module-graph.mjs";
 
 const root = process.argv[2];
+const policyFile = process.argv[3] ?? new URL("./architecture-boundaries.json", import.meta.url).pathname;
+
 if (!root) {
-  console.error("Usage: node enforcement/check-architecture-boundaries.mjs <project-src-root>");
+  console.error("Usage: node enforcement/check-architecture-boundaries.mjs <project-src-root> [policy-file]");
   process.exit(2);
 }
 
@@ -16,21 +18,33 @@ if (!fs.existsSync(sourceRoot) || !fs.statSync(sourceRoot).isDirectory()) {
   process.exit(2);
 }
 
+function loadPolicy(file) {
+  try {
+    const policy = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!Array.isArray(policy.rules)) throw new Error("policy.rules must be an array");
+    for (const rule of policy.rules) {
+      if (!rule.id || !rule.severity || !["block", "warning"].includes(rule.severity)) {
+        throw new Error("each rule requires id and severity=block|warning");
+      }
+      if (!Array.isArray(rule.sourceDirectories) || !Array.isArray(rule.targetDirectories)) {
+        throw new Error(`rule ${rule.id} requires sourceDirectories and targetDirectories arrays`);
+      }
+    }
+    return policy.rules;
+  } catch (error) {
+    console.error(`Invalid architecture policy: ${error.message}`);
+    process.exit(2);
+  }
+}
+
+const layerRules = loadPolicy(policyFile);
 const config = loadTsConfig(sourceRoot);
 const violations = [];
+const warnings = [];
 const unresolved = [];
 const files = [];
 const sourceCache = new Map();
 const importsCache = new Map();
-
-const layerRules = [
-  {
-    name: "presentation-cannot-import-state",
-    sourceDirectories: ["UI/atoms", "UI/molecules", "UI/organisms"],
-    targetDirectories: ["states"],
-    message: "Presentation components must not depend on state modules, directly or transitively.",
-  },
-];
 
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -96,17 +110,23 @@ for (const file of files) {
     if (!dependency) continue;
 
     const source = sourceOf(file);
-    violations.push({
+    const diagnostic = {
       file: relative(file),
       line: lineAt(source, dependency.index),
-      rule: rule.name,
-      message: rule.message,
+      rule: rule.id,
+      message: rule.message ?? "Architecture boundary violation.",
       import: dependency.specifier,
       target: relative(dependency.target),
-    });
+    };
+
+    if (rule.severity === "warning") warnings.push(diagnostic);
+    else violations.push(diagnostic);
   }
 }
 
+for (const warning of warnings) {
+  console.error(`${warning.file}:${warning.line} [WARNING] ${warning.rule}: ${warning.message} (${warning.import} → ${warning.target})`);
+}
 for (const violation of violations) {
   console.error(`${violation.file}:${violation.line} [BLOCK] ${violation.rule}: ${violation.message} (${violation.import} → ${violation.target})`);
 }
@@ -118,4 +138,4 @@ if (unresolved.length > 0) {
 }
 
 if (violations.length > 0) process.exit(1);
-console.log("Architecture boundary check passed.");
+console.log(`Architecture boundary check passed${warnings.length ? ` with ${warnings.length} warning(s)` : ""}.`);
