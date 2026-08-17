@@ -36,7 +36,7 @@ const CHECKLIST = {
     'Retorno explícito em todo método',
     'Type nunca inline em arquivo de classe: um por arquivo em types/',
     'Service fala só com o próprio repository, sem injetar service de outro',
-    'Complexidade ciclomática máxima 5 por método',
+    'Complexidade é sinal diagnóstico; não refatorar apenas para satisfazer métrica',
     'Todo identificador (variável, método, classe, DTO) autoexplicativo sem abrir o arquivo',
     'Zero comentário narrativo — só WHY escondido (constraint, motivo, workaround)',
     'Teste cobre caminho feliz, borda e erro',
