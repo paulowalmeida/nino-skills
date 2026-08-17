@@ -10,10 +10,12 @@ The absence of explicit permission **MUST NOT** be interpreted as permission to 
 
 Some rules in this file are aligned with official technical guidance:
 
-- React Rules: Components and Hooks must be pure; side effects belong outside render; Hooks have strict usage rules. Official reference: `https://react.dev/reference/rules`
+- React Rules: Components and Hooks must be pure; side effects belong outside render. Official reference: `https://react.dev/reference/rules`
 - React Rules of Hooks: `https://react.dev/reference/rules/rules-of-hooks`
 - TypeScript Handbook: type assertions affect static checking and do not perform runtime validation. Official reference: `https://www.typescriptlang.org/docs/handbook/2/everyday-types.html`
-- ESLint complexity rule: official reference for cyclomatic-complexity concepts and configurable thresholds: `https://eslint.org/docs/latest/rules/complexity`
+- TypeScript Compiler API: TypeScript exposes AST/compiler tooling for programmatic source analysis. Official reference: `https://www.typescriptlang.org/docs/handbook/intro`
+- ESLint complexity: cyclomatic complexity is configurable and measures independent execution paths; it is a structural signal, not a universal maintainability threshold. Official reference: `https://eslint.org/docs/latest/rules/complexity`
+- Sonar Cognitive Complexity: cognitive complexity is intended to estimate understandability and differs from cyclomatic complexity. Reference: `https://www.sonarsource.com/resources/cognitive-complexity/`
 
 These sources provide technical foundations, but **Nino project rules may be stricter**. When an explicit Nino rule differs from an external recommendation, the Nino rule wins.
 
@@ -38,163 +40,192 @@ Services MAY contain multiple operations from the same domain. This does **NOT**
 Examples:
 
 ```text
-useOrders()                  ✅ one coherent responsibility
-useCreateOrder()             ✅ one coherent responsibility
-useOrdersAndPermissions()    ❌ unrelated responsibilities
-OrderService.createOrder()   ✅ one operation
-OrderService.cancelOrder()   ✅ another operation
+useOrders()                  one coherent responsibility
+useCreateOrder()             one coherent responsibility
+useOrdersAndPermissions()   unrelated responsibilities
+OrderService.createOrder()  one operation
+OrderService.cancelOrder()  another operation
 ```
 
 When a function begins accumulating distinct responsibilities, the agent **MUST split it by responsibility instead of adding another branch to the same function**.
 
-## Function Complexity — Hard Limit
+## Function Size and Complexity — Layered Model
 
-The project's authoritative function-complexity metric is the **CodeMetrics collected-complexity calculation** used by the VS Code extension published as `kisstkondoros.vscode-codemetrics`.
+The Nino objective is **maintainable function structure**, not compliance with an arbitrary number.
 
-CodeMetrics computes complexity from the source **AST**: it parses the source, walks AST nodes, and applies the configured contribution for each node to produce a collected-complexity value for the analyzed function/method.
+A function can be problematic because it is:
 
-The project **MUST use that same measurement model** rather than substituting a different definition of cyclomatic, cognitive, or algorithmic complexity.
+- physically large;
+- branch-heavy;
+- cognitively difficult;
+- deeply nested;
+- parameter-heavy;
+- responsible for unrelated behavior;
+- artificially decomposed to satisfy metrics;
+- technically small but semantically difficult to understand.
 
-### Authoritative implementation
+No single metric is a complete maintainability verdict.
 
-The current pinned reference is:
+### Mechanical signals
 
-```text
-Tool: CodeMetrics
-Extension ID: kisstkondoros.vscode-codemetrics
-Reference version: 1.26.1
-Metric engine: tsmetrics-core 1.4.1
-Languages: TypeScript / TSX / JavaScript / JSX
-Threshold: 5
-```
+The Nino complexity analyzer **MUST** collect, when applicable:
 
-The exact implementation and configuration are part of the project rule.
+- function LOC;
+- cyclomatic complexity;
+- CodeMetrics collected complexity when the CodeMetrics extension is available;
+- cognitive complexity;
+- maximum control-flow nesting depth;
+- parameter count.
 
-The project **MUST NOT** treat the extension's visual severity colors, CodeLens display settings, editor decorations, or other presentation settings as the complexity rule. The authoritative value is the **collected complexity of the individual function**.
+The analyzer uses the TypeScript AST for deterministic structural measurements. The project's analyzer is **not** a claim that its cyclomatic or cognitive implementation is identical to CodeMetrics or Sonar. Each metric MUST be named according to what it actually measures.
 
-If the repository later vendors or reproduces the calculation, that implementation **MUST match the pinned measurement model and configuration** rather than introducing a new formula.
-
-### Hard threshold
-
-The **CodeMetrics collected complexity of every individual function MUST be 5 or less**.
-
-This rule applies to:
+The analyzer MUST report the metrics for individual functions, including:
 
 - function declarations;
 - arrow functions;
 - callbacks;
 - nested/local functions;
-- custom Hooks;
-- event handlers;
+- Custom Hooks;
+- handlers;
 - selectors;
-- utility functions;
+- utilities;
 - asynchronous functions;
 - Service operations;
 - class methods;
 - function expressions.
 
-Services are NOT exempt. A Service file MAY contain many operations, but **each individual operation MUST have collected complexity ≤ 5**.
+### Metric roles
 
-### Measurement rules
+Metrics have different purposes:
 
-The agent **MUST**:
+```text
+LOC                 → physical size signal
+Cyclomatic          → branching / path signal
+CodeMetrics         → project-specific structural signal
+Cognitive           → control-flow comprehension signal
+Nesting             → structural readability signal
+Parameters          → interface / coupling signal
+```
 
-1. use the pinned CodeMetrics calculation as the authoritative metric;
-2. evaluate each individual function independently;
-3. include arrow functions and function expressions;
-4. use the configured node contributions of the pinned implementation;
-5. treat the reported collected complexity as authoritative.
+The agent **MUST NOT** combine these metrics into a synthetic "quality score".
+
+### Threshold policy
+
+Thresholds are **control parameters**, not universal truths.
+
+Until a sufficiently representative Nino baseline has been measured, the repository **MUST NOT** present a warning or blocking threshold as a scientifically established project limit.
+
+The baseline MUST be calibrated from real Nino source, preferably including `nino-app/apps/manager` on the active development branch and additional representative packages when the sample is too small.
+
+Calibration SHOULD inspect distributions and outliers rather than blindly selecting a percentile. Thresholds MUST also be reviewed against legitimate function categories such as TSX composition, orchestration, Hooks, Services, and pure utilities.
+
+A calibrated threshold MUST document:
+
+1. which metric it controls;
+2. which function categories it applies to;
+3. whether it produces a warning or block;
+4. what behavior the threshold is intended to induce;
+5. what evidence was used to select it;
+6. when the threshold should be recalibrated.
+
+### Warning versus blocking
+
+Until calibration is complete:
+
+- metric findings are **diagnostic warnings**;
+- they MUST NOT automatically force decomposition;
+- they MUST NOT be treated as proof of a design defect.
+
+After calibration:
+
+- **warnings** mean "inspect and make an explicit semantic decision";
+- **hard failures** are reserved for objectively excessive structural conditions or explicit project rules with a documented basis.
+
+A warning **MUST NOT** be converted into a hard failure merely because an agent prefers stricter numbers.
+
+### CodeMetrics policy
+
+CodeMetrics is useful because it is an AST-based project signal and because the team already uses the VS Code extension `kisstkondoros.vscode-codemetrics`.
+
+However, CodeMetrics **MUST NOT** be treated as a universal definition of cyclomatic, cognitive, algorithmic, or maintainability complexity.
+
+The old Nino rule that treated `CodeMetrics collected complexity <= 5` as a universal hard gate is intentionally retired by this section.
+
+The CodeMetrics configuration **MUST NOT** be changed merely to make code pass. If CodeMetrics is used as an enforcement input, its version and relevant configuration MUST be pinned and documented.
+
+### TSX composition
+
+A TSX render/composition function MAY legitimately be larger than a normal implementation function because JSX composition is itself a responsibility.
+
+This is **not** a blanket exemption from complexity review.
+
+The agent MUST still inspect whether the component mixes business logic, state orchestration, data transformation, and presentation responsibilities.
+
+A TSX function MUST NOT be split merely to reduce LOC or a metric when the extracted pieces have no meaningful semantic identity.
+
+### Semantic review
+
+Metrics identify hotspots. Semantic judgment determines whether the hotspot represents a real design problem.
+
+For every significant metric warning, the agent SHOULD use the `complexity-refactoring` Skill and determine:
+
+1. the function's single responsibility;
+2. whether the complexity is inherent or accidental;
+3. whether the function is orchestration, implementation, or TSX composition;
+4. whether distinct responsibilities have different reasons to change;
+5. whether extraction would create a meaningful responsibility boundary;
+6. whether the caller becomes easier to understand;
+7. whether cohesion improves;
+8. whether complexity is actually reduced rather than relocated.
+
+### Anti-gaming rule
+
+A refactor **MUST NOT** be considered successful merely because a metric became smaller.
 
 The agent **MUST NOT**:
 
-- describe the CodeMetrics score as if it were a standard cyclomatic-complexity score;
-- replace the CodeMetrics score with a manually calculated number;
-- substitute another analyzer merely because it reports a lower value;
-- ignore a function because the editor does not currently display a CodeLens for it;
-- use function-name exclusions or equivalent configuration to bypass the rule;
-- change CodeMetrics node weights, exclusions, or thresholds to make code pass.
+- split one function into many arbitrary tiny functions solely to lower metrics;
+- move complexity into another function to hide it;
+- create wrappers that only forward parameters;
+- extract blocks with no coherent responsibility;
+- increase indirection solely to satisfy a threshold;
+- alter analyzer configuration to make a result pass.
 
-### Function coverage and analyzer limitations
+A valid extraction MUST have a meaningful responsibility, a coherent name, an understandable contract, and a measurable improvement in the structure or readability of the caller or extracted logic.
 
-All relevant function forms **MUST remain included** in measurement.
+### Nesting reduction
 
-If the official measurement tool does not report a function because of an analyzer limitation, that limitation **MUST NOT** be interpreted as an exemption. The project's enforcement implementation must be fixed or supplemented so that the function is measured using the same authoritative calculation.
-
-### TSX Composition Exception
-
-There is exactly one architectural exception to the complexity limit:
-
-> A function whose **primary and clearly identifiable responsibility is rendering/composing TSX markup** MAY exceed complexity 5 when that complexity is inherent to UI composition itself.
-
-This exception:
-
-- applies only to the TSX composition/render function;
-- MUST NOT be used by helper functions called by that function;
-- MUST NOT be used by Hooks, handlers, selectors, Services, utilities, callbacks, or business-logic functions;
-- MUST NOT be used merely because a function happens to live in a `.tsx` file.
-
-### React purity and render-time rules
-
-Components and Hooks **MUST remain pure with respect to rendering**. Code executed during render **MUST NOT perform side effects that affect external systems or mutate data outside the component's local render state.
-
-Side effects such as network requests, subscriptions, timers, DOM mutations, logging with externally meaningful side effects, persistence, and external mutations **MUST NOT be performed during render**. They belong in the appropriate effect/event/infrastructure layer.
-
-Authoritative React foundation: `https://react.dev/reference/rules`
-
-Example:
-
-```tsx
-// ✅ composition-only render
-return (
-  <View>
-    {conditionA && <A />}
-    {conditionB ? <B /> : <C />}
-  </View>
-)
-```
-
-```ts
-// ❌ no TSX exception: business/processing logic
-function processOrder(order: Order) {
-  // CodeMetrics collected complexity MUST remain ≤ 5
-}
-```
-
-### Required Response to Complexity > 5
-
-When a non-exempt function exceeds complexity 5, the agent **MUST reduce the CodeMetrics collected complexity to 5 or less before considering the task complete**.
-
-Preferred techniques include:
+When nesting is the main structural problem, the agent SHOULD first consider:
 
 - guard clauses;
 - early returns;
-- extracting a meaningful decision or operation;
-- lookup tables/maps instead of long conditional chains;
-- separating validation from transformation;
-- separating orchestration from business rules.
+- explicit predicates;
+- separating exceptional paths from the main path;
+- extracting a meaningful decision.
 
-The agent **MUST NOT**:
+The agent MUST NOT move the same nested structure into another function solely to lower the caller's nesting metric.
 
-- split code into meaningless wrappers solely to make the metric pass;
-- move complexity into another function merely to hide it;
-- use indirection to evade the complexity check;
-- add an artificial function boundary with no coherent responsibility;
-- alter metric configuration to lower the measured score.
+### Complexity reduction
 
-Any extracted function **MUST itself satisfy Single Responsibility and MUST independently obey the complexity limit**.
+When branching is the problem, identify why the branches exist before extracting code.
 
-## Functions Must Remain Local and Understandable
+Prefer:
 
-Functions **MUST** be small enough that their purpose and control flow can be understood locally.
+- separating independent policies;
+- extracting cohesive decisions;
+- explicit domain predicates;
+- lookup structures when they genuinely represent data;
+- separating orchestration from implementation.
 
-The agent **SHOULD** prefer:
+Do not replace readable branching with abstraction merely because the abstraction has a lower metric.
 
-- guard clauses over deeply nested conditionals;
-- early returns over unnecessary branching;
-- named intermediate values when they improve readability;
-- pure functions when side effects are not required.
+## React purity and render-time rules
 
-The agent **MUST NOT** create a helper function solely to reduce line count when the helper does not have a meaningful responsibility or improve readability.
+Components and Hooks **MUST remain pure with respect to rendering**. Code executed during render **MUST NOT** perform side effects that affect external systems or mutate data outside the component's local render state.
+
+Side effects such as network requests, subscriptions, timers, DOM mutations, persistence, and external mutations **MUST NOT** be performed during render. They belong in the appropriate effect, event, or infrastructure layer.
+
+Authoritative React foundation: `https://react.dev/reference/rules`
 
 ## TypeScript
 
@@ -209,26 +240,13 @@ The agent:
 - **MUST preserve discriminated unions and literal types when they carry meaningful constraints**;
 - **MUST NOT weaken a type merely to make an implementation compile**.
 
-Unsafe patterns include:
-
-```ts
-const value = something as any      // ❌
-const value = something as SomeType // ❌ when the runtime invariant was not verified
-```
-
-A type error that exposes a real contract mismatch **MUST be fixed at the contract or implementation**, not hidden with an assertion.
+A type error that exposes a real contract mismatch **MUST** be fixed at the contract or implementation, not hidden with an assertion.
 
 ## Null, Undefined, and Optional Values
 
 The agent **MUST handle nullable and optional values explicitly according to the real domain contract**.
 
 Do not use non-null assertions (`!`) merely to silence TypeScript unless the invariant is established by the code and cannot reasonably be represented through typing.
-
-```ts
-value!.name // ❌ unsupported assumption
-```
-
-Prefer explicit validation or a type-safe control flow when nullability is meaningful.
 
 ## Error Handling
 
@@ -240,14 +258,6 @@ The agent **MUST NOT**:
 - catch an error only to rethrow the same error without adding context or changing responsibility;
 - return fake success values to hide failures;
 - use broad `catch` blocks to conceal programming errors.
-
-```ts
-try {
-  await execute()
-} catch {
-  return null // ❌ silently converting failure into success-like state
-}
-```
 
 When an error cannot be meaningfully handled at the current layer, **let it propagate to the appropriate owner**.
 
@@ -280,8 +290,6 @@ For TSX specifically:
 
 The correct non-TSX location depends on responsibility and project architecture; do not move business logic into a generic utility merely to remove it from TSX.
 
-Business logic **MUST NOT** be hidden behind a misleading utility name, component prop callback, or formatting helper.
-
 ## Constants and Configuration
 
 Values with business or application meaning **MUST** be named and centralized when they are reused or represent policy.
@@ -294,23 +302,7 @@ The agent **MUST NOT** create a constant abstraction for a value used only once 
 
 Names **MUST communicate intent, responsibility, or domain meaning**.
 
-The agent **MUST**:
-
-- prefer explicit names over abbreviations;
-- name functions by the operation they perform;
-- name boolean values with boolean intent (`is`, `has`, `can`, `should`, etc.) when applicable;
-- avoid names that describe implementation instead of purpose.
-
-Avoid:
-
-```ts
-const data = ...
-const temp = ...
-const thing = ...
-const handle = ...
-```
-
-unless the surrounding scope makes the meaning genuinely unambiguous.
+The agent **MUST** prefer explicit names over abbreviations, name functions by the operation they perform, and name boolean values with boolean intent (`is`, `has`, `can`, `should`, etc.) when applicable.
 
 ## Abstractions
 
@@ -328,8 +320,6 @@ When two implementations are similar but their responsibilities are not actually
 ## Duplication
 
 Not all duplication is harmful.
-
-The agent **MUST NOT** deduplicate code solely because two snippets look similar.
 
 Before extracting a shared abstraction, verify that the code shares:
 
@@ -358,40 +348,25 @@ Use the project's established export strategy.
 
 The agent **MUST NOT** introduce barrel files, `index.ts` aggregators, or alternate export conventions when the project rules prohibit them.
 
-Do not create additional export layers merely to shorten import paths.
-
 ## Comments
 
 Comments **MUST explain intent, constraints, or non-obvious reasoning**, not restate the code.
 
 The agent **MUST NOT** add comments that compensate for unclear naming or unnecessarily complex code.
 
-When a non-obvious constraint is important to preserve, a concise comment **SHOULD** explain why it exists.
-
 ## Dead Code and Temporary Code
 
 The agent **MUST NOT** leave unused imports, unreachable code, obsolete commented-out implementations, or debugging statements in completed changes.
 
-Temporary code **MUST** be explicitly temporary and MUST NOT be left in a finished implementation unless the task explicitly requires it.
+## File Size
 
-## File and Function Size
+There is no universal maximum number of lines that automatically makes a file incorrect.
 
-There is no universal maximum number of lines that automatically makes code incorrect.
-
-However, the agent **MUST** treat growing size and complexity as a signal to reassess responsibility.
-
-A file or function that becomes difficult to understand because it contains multiple responsibilities **MUST** be decomposed by responsibility, not arbitrarily by line count.
-
-A split **MUST NOT** be performed merely to satisfy an artificial line-count target.
+Growing file size **MUST** be treated as a signal to reassess responsibility and cohesion, not as an automatic decomposition command.
 
 ## Refactoring During Feature Work
 
-Refactoring is allowed only when it is necessary to:
-
-- satisfy the requested feature safely;
-- satisfy an applicable project rule;
-- remove duplication directly caused by the requested change;
-- make the implementation correct without expanding unrelated scope.
+Refactoring is allowed only when it is necessary to satisfy the requested feature safely, satisfy an applicable project rule, remove duplication directly caused by the requested change, or make the implementation correct without expanding unrelated scope.
 
 The agent **MUST NOT** use a feature task as an excuse to modernize unrelated code.
 
@@ -412,24 +387,25 @@ If these answers cannot be established from the repository and task context, **D
 Before completing a coding task, the agent **MUST**:
 
 1. inspect the final changed code;
-2. verify that every individual function complies with Single Responsibility;
-3. verify that every non-exempt individual function has CodeMetrics collected complexity ≤ 5 according to the pinned implementation;
-4. confirm that any complexity exception is limited to the TSX composition/render function and is not hiding complexity in helpers;
-5. confirm that the CodeMetrics implementation/configuration was not modified to make the code pass;
-6. verify React purity and absence of side effects during render where applicable;
-7. verify that types and contracts remain correct;
-8. verify that no forbidden workaround or dependency was introduced;
-9. run the relevant typecheck, lint, complexity, tests, or other available checks;
-10. inspect the final diff for unrelated changes.
+2. verify Single Responsibility semantically;
+3. inspect applicable structural metrics;
+4. determine whether metric findings represent a real design problem;
+5. use the complexity-refactoring Skill when a significant hotspot requires semantic judgment;
+6. verify that any refactor improves cohesion, responsibility boundaries, or readability rather than merely lowering a metric;
+7. verify React purity and absence of side effects during render where applicable;
+8. verify that types and contracts remain correct;
+9. verify that no forbidden workaround or dependency was introduced;
+10. run the relevant typecheck, lint, complexity, tests, or other available checks;
+11. inspect the final diff for unrelated changes.
 
 Passing automated checks does not replace reviewing the implementation against these rules.
 
 ## Enforcement
 
-The following rules **MUST be protected mechanically whenever technically possible**:
+The following should be protected mechanically whenever technically possible:
 
-- CodeMetrics collected complexity ≤ 5 for every non-exempt function;
-- Single Responsibility violations where objective detection is possible;
+- structural complexity signals reported by the Nino analyzer;
+- calibrated hard complexity thresholds once the project baseline justifies them;
 - forbidden `any` usage;
 - prohibited dependency direction;
 - circular dependencies;
@@ -440,8 +416,10 @@ The following rules **MUST be protected mechanically whenever technically possib
 - architecture-specific file/folder conventions;
 - React Rules of Hooks and render-purity constraints where mechanically detectable.
 
-When an automated check fails, the agent **MUST fix the implementation rather than weaken the check**.
+Complexity warnings **MUST NOT** be converted into hard failures merely to force metric compliance before the thresholds have been calibrated.
+
+When an automated hard check fails, the agent **MUST** fix the implementation rather than weaken the check.
 
 ## Final Rule
 
-> **Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, keeps every individual function single-purpose and within the authoritative CodeMetrics complexity limit, respects React purity, avoids speculative abstraction, and leaves no hidden error or unrelated change behind.**
+> **Write the smallest clear implementation that satisfies the current requirement, preserves real type and architectural contracts, keeps responsibilities coherent, treats metrics as structural evidence rather than truth, and never uses decomposition merely to make a number pass.**
