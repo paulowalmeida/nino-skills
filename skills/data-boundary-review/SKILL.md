@@ -1,75 +1,91 @@
 ---
 name: data-boundary-review
-description: Review nino-app services, routers, libraries, constants, types, and adapters for clean data flow, domain/transport separation, and correct ownership.
+description: Review nino-app services, routers, libraries, constants, types, and adapters for clean data flow, domain/transport separation, authoritative sources, and correct ownership.
 ---
 
 # Data Boundary Review
 
 ## Purpose
 
-Verify that transport, domain policy, transformation, caching, routing, and UI adaptation remain in their intended boundaries. This Skill reasons about ownership and flow; `enforce-*` hooks handle objective syntax/placement constraints.
+Verify that transport, domain policy, transformation, caching, routing, and UI adaptation remain in their intended boundaries and that each concern has one authoritative owner.
 
 ## Authority
 
-Apply `CLAUDE.md`, applicable `.claude/rules/*`, `rules/architecture.md`, `rules/coding.md`, `rules/hooks.md`, and package-local rules. Objective enforcement findings are hard constraints.
+Apply `CLAUDE.md`, applicable `rules/*`, then objective `enforce-*` results and package-local constraints. Mechanical failures are hard defects.
 
-## Review Method
+## Mandatory Review Sequence
 
-Trace a representative end-to-end path:
+1. Inspect the target unit completely enough to identify its public contract.
+2. Trace one representative end-to-end path:
 
 ```text
-UI intent → Hook/state boundary → Service/transport → domain mapping → consumer
+UI intent → Hook/state → Service/transport → mapping/domain → consumer
 ```
 
-For each step identify who owns validation, API transport, domain policy, transformation, caching, and presentation adaptation.
+3. For each boundary, identify who owns validation, transport, domain policy, transformation, caching, and presentation adaptation.
+4. Inspect callers/callees where ownership is ambiguous.
+5. Search for existing authoritative types, services, adapters, and paths before proposing a new boundary.
+6. Record each finding and disposition.
 
 ## 9/10 Gates
 
-Flag when:
+Report a confirmed violation when evidence shows:
 
-- a UI layer performs raw transport or business orchestration that belongs behind the approved boundary;
-- a Service leaks presentation concerns or becomes a component/controller in disguise;
-- an adapter encodes business policy instead of transforming representations;
-- domain policy is hidden inside a generic utility, formatter, router, or transport helper;
-- the router owns a business workflow instead of navigation/route governance;
-- constants contain executable behavior or JSX, or are used as a hidden policy engine;
-- local types duplicate an authoritative domain contract without a translation need;
-- a utility is app-specific but presented as generic infrastructure;
-- a boundary exists only in the filename while imports/callers violate its intended ownership;
-- a new abstraction duplicates an existing approved data path without a concrete architectural need.
+- UI performs raw transport/business orchestration outside the approved boundary;
+- a Service leaks presentation concerns or acts as a UI controller;
+- an Adapter encodes business policy instead of representation mapping;
+- domain policy is hidden in a generic utility, formatter, router, or transport helper;
+- router modules implement business workflows, persistence policy, or domain mutation;
+- constants contain executable behavior/JSX or become hidden policy engines;
+- local types create a second source of truth without a real translation need;
+- a supposedly generic utility depends on app-specific UI/domain knowledge;
+- the boundary exists only in filename/location while actual dependencies violate it;
+- a new Service/Adapter/Utility duplicates an existing approved data path without a demonstrated requirement.
 
-## Boundary Test
+## Source-of-Truth Test
 
-For every candidate violation ask:
+For every important type, policy, or data transformation ask:
 
-1. What data enters this boundary?
-2. What knowledge does the unit own?
-3. What knowledge is it merely transporting?
-4. Where is the authoritative source of truth?
-5. Where should a future change in this concern occur?
+1. Where is the authoritative definition?
+2. Is this unit consuming, transporting, translating, or redefining it?
+3. If it translates, is the translation contract explicit?
+4. Would a future policy change require editing multiple places?
 
-Different reasons to change are strong evidence for different boundaries.
-
-## Types Test
-
-A type may legitimately be local when it represents a view model, request DTO, or adapter-specific representation. It is a defect only when local duplication creates a second source of truth or obscures an authoritative domain contract.
+Duplication is not automatically a defect when the second representation is a deliberate DTO/view model/adapter contract.
 
 ## Router Test
 
-Navigation decisions may be route-specific. Business workflows, persistence policy, and domain mutation should not be hidden inside route modules merely because the route can reach the necessary dependencies.
+Navigation and route selection may be route-specific. Business workflows, persistence policy, and domain mutation must remain outside route governance.
+
+## Boundary Test
+
+Different reasons to change are evidence for separate ownership. Do not create boundaries merely because a file is large, and do not accept a boundary merely because code was moved into a file with the right name.
+
+## Finding Classification
+
+Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
+
+`NEEDS-EVIDENCE` must state which path, caller, authoritative source, or rule remains unresolved.
 
 ## Evidence Standard
 
-Every finding MUST include exact file/line, traced data path, current owner, expected owner, authoritative destination, and minimal correction. If the end-to-end graph is incomplete, inspect callers/callees before declaring a violation.
+Every confirmed finding MUST include exact file/line, traced data path, current owner, expected owner, authoritative source/destination, impact, and minimal correction. Retrospective PASS requires enough dependency inspection to prove the data path considered.
 
 ## Handoffs
 
-- UI layer responsibility → `architecture-review`.
-- Hook/state ownership → `hook-state-review`.
-- Component/composition presentation boundary → `component-review` / `composition-review`.
-- Naming/abstraction quality → `code-quality-review`.
-- Mechanical import/type/structure violations → `enforce-*`.
+- UI layer → `architecture-review`.
+- Hook/state → `hook-state-review`.
+- Component/Composition presentation boundary → `component-review` / `composition-review`.
+- Naming/abstraction → `code-quality-review`.
+- Structural decomposition → `complexity-refactoring`.
+- Mechanical import/type/structure → `enforce-*`.
+
+The receiving Skill owns the final disposition; no ping-pong without new evidence.
 
 ## Non-Goals
 
-Do not create a new Service/Adapter/Utility simply to move code to another file. Do not duplicate domain types merely to avoid an import. Do not treat every transformation as a new architectural layer.
+Do not create layers merely to relocate code. Do not duplicate domain types just to avoid an import. Do not treat every mapping function as a new architectural layer.
+
+## Final Review Gate
+
+Before PASS, confirm authoritative sources, end-to-end path, ownership of each transformation/policy, boundary direction, caller evidence, and duplicate-source risk were inspected.
