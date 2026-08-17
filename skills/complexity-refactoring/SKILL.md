@@ -98,7 +98,15 @@ The final implementation must preserve or improve semantic quality while meaning
 
 Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVIDENCE`, or `PASS`.
 
-`NEEDS-EVIDENCE` must identify the missing caller, metric, or architectural context. It is not a PASS.
+## Resolution Protocol
+
+- **VIOLATION:** provide structural and semantic evidence plus the required correction.
+- **LEGACY:** identify the out-of-scope complexity; it MUST NOT justify metric-driven decomposition in new work.
+- **EXCEPTION:** record explicit project authorization and exact scope. Do not infer exceptions from metric convenience.
+- **NEEDS-EVIDENCE:** identify the missing metric/caller/architecture evidence and the next concrete inspection. It remains unresolved until evidence is obtained or review is explicitly closed as incomplete.
+- **PASS:** may be declared only after the Final Review Gate is satisfied.
+
+An unresolved `NEEDS-EVIDENCE` item MUST NOT be silently converted to PASS. If required evidence cannot be obtained, final status is **INCOMPLETE**.
 
 ## Evidence Standard
 
@@ -114,9 +122,13 @@ Every confirmed finding MUST identify the structural signal, why it matters sema
 
 The receiving Skill owns final disposition; no ping-pong without new evidence.
 
+## Non-Goals
+
+Do not refactor to satisfy an arbitrary metric, create wrappers without semantic boundaries, or split coherent workflows solely because they are long.
+
 ## Final Review Gate
 
-Before PASS/complete, confirm the original complexity signal was understood, the semantic reason for refactoring is explicit, complexity was not relocated, caller comprehension improved, and applicable enforcement still passes.
+Before PASS/complete, confirm the original complexity signal was understood, semantic refactoring reason is explicit, complexity was not relocated, caller comprehension improved, before/after evidence was inspected, applicable enforcement still passes, and all `NEEDS-EVIDENCE` items are resolved or explicitly reported as INCOMPLETE.
 
 ## Final Principle
 
