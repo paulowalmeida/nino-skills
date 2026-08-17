@@ -90,7 +90,7 @@ function dependenciesOf(file) {
       unresolved.push({ file: relative(file), line: lineAt(source, index), specifier });
       continue;
     }
-    dependencies.push({ resolved, specifier, index });
+    dependencies.push({ resolved, specifier, index, file });
   }
   importsCache.set(file, dependencies);
   return dependencies;
@@ -127,10 +127,10 @@ for (const file of files) {
       : directForbiddenDependency(file, rule.targetDirectories);
     if (!dependency) continue;
 
-    const source = sourceOf(file);
+    const diagnosticSource = sourceOf(dependency.file ?? file);
     const diagnostic = {
-      file: relative(file),
-      line: lineAt(source, dependency.index),
+      file: relative(dependency.file ?? file),
+      line: lineAt(diagnosticSource, dependency.index),
       rule: rule.id,
       message: rule.message ?? "Architecture boundary violation.",
       import: dependency.specifier,
