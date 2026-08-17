@@ -15,7 +15,7 @@ The agent **MUST NOT edit first and attempt to conform afterward**.
 1. **Explicit user instructions** have priority, provided they do not violate higher-level system/platform constraints.
 2. `rules/` defines the project's permanent rules.
 3. Skills define mandatory procedures for specific task types.
-4. Hooks, linters, tests, AST checks, and other automated checks are enforcement mechanisms and **MUST NOT be bypassed**.
+4. Hooks, linters, tests, AST checks, and other automated checks are enforcement mechanisms and **MUST NOT** be bypassed.
 
 If project rules conflict and no explicit precedence exists:
 
@@ -146,6 +146,31 @@ Before stating that the task is complete, the agent **MUST**:
 
 **Do not claim success without sufficient evidence.**
 
+## 9/10 Rule Validation Gate
+
+The label **"9/10" is a verification result, not an opinion**.
+
+The agent **MUST NOT** call a rule, Skill, or rule set "9/10" unless the following gate has been evaluated explicitly:
+
+```text
+[ ] Rules are normative and unambiguous.
+[ ] Scope and affected code are explicitly defined.
+[ ] Allowed cases are explicit.
+[ ] Forbidden cases are explicit.
+[ ] Exceptions are explicit and narrowly scoped.
+[ ] Common bypasses are explicitly prohibited.
+[ ] Dependencies and layer/state boundaries are explicit.
+[ ] Relevant external standards were checked against primary technical documentation.
+[ ] Relevant repository conventions were inspected.
+[ ] Mechanically verifiable rules have a concrete enforcement path.
+[ ] The final written rule was reread after editing.
+[ ] An adversarial review found no known high-impact ambiguity or contradiction.
+```
+
+If any applicable item cannot be established, the agent **MUST NOT** claim 9/10.
+
+The agent **MUST** report which gate items remain unresolved instead of replacing the missing evidence with confidence, familiarity, or subjective judgment.
+
 ## Fail-Closed Mode
 
 When critical information is missing for an architectural or implementation decision, the default behavior is:
@@ -176,7 +201,8 @@ The agent **MUST NOT**:
 - accept an implementation as "good enough" when it violates an explicit rule;
 - invent an API, component, pattern, structure, or exception to fill an information gap without investigation;
 - edit code based only on memory when the source of truth can be consulted in the repository;
-- report a partial inspection as a complete audit.
+- report a partial inspection as a complete audit;
+- claim a rule is 9/10 without passing the 9/10 Rule Validation Gate.
 
 ## Final Principle
 
