@@ -131,6 +131,45 @@ function readIdentifier(source, index) {
   return match ? { value: match[0], end: index + match[0].length } : null;
 }
 
+function findFromSpecifier(source, index) {
+  let cursor = index;
+  let braceDepth = 0;
+  let parenDepth = 0;
+  let bracketDepth = 0;
+
+  while (cursor < source.length) {
+    cursor = skipTrivia(source, cursor);
+    if (cursor >= source.length) return null;
+
+    const char = source[cursor];
+    if (char === "'" || char === '"' || char === "`") {
+      cursor = skipStringOrTemplate(source, cursor);
+      continue;
+    }
+
+    const identifier = readIdentifier(source, cursor);
+    if (identifier) {
+      if (identifier.value === "from" && braceDepth === 0 && parenDepth === 0 && bracketDepth === 0) {
+        return readString(source, skipTrivia(source, identifier.end));
+      }
+      cursor = identifier.end;
+      continue;
+    }
+
+    if (char === "{") braceDepth += 1;
+    else if (char === "}") braceDepth = Math.max(0, braceDepth - 1);
+    else if (char === "(") parenDepth += 1;
+    else if (char === ")") parenDepth = Math.max(0, parenDepth - 1);
+    else if (char === "[") bracketDepth += 1;
+    else if (char === "]") bracketDepth = Math.max(0, bracketDepth - 1);
+    else if (char === ";" && braceDepth === 0 && parenDepth === 0 && bracketDepth === 0) return null;
+
+    cursor += 1;
+  }
+
+  return null;
+}
+
 export function extractImports(source) {
   const imports = [];
   let cursor = 0;
@@ -163,31 +202,14 @@ export function extractImports(source) {
         next = skipTrivia(source, next + 1);
         const literal = readString(source, next);
         if (literal) imports.push({ specifier: literal.value, index: cursor });
-      } else if (source[next] === ".") {
-        // import.meta is not a module dependency.
-      } else {
+      } else if (source[next] !== ".") {
         const literal = readString(source, next);
-        if (literal) {
-          imports.push({ specifier: literal.value, index: cursor });
-        } else {
-          const from = /\bfrom\b/g;
-          from.lastIndex = next;
-          const match = from.exec(source);
-          if (match) {
-            const candidate = readString(source, skipTrivia(source, match.index + match[0].length));
-            if (candidate) imports.push({ specifier: candidate.value, index: cursor });
-          }
-        }
-      }
-    } else if (token.value === "export") {
-      const next = skipTrivia(source, token.end);
-      const from = /\bfrom\b/g;
-      from.lastIndex = next;
-      const match = from.exec(source);
-      if (match) {
-        const candidate = readString(source, skipTrivia(source, match.index + match[0].length));
+        const candidate = literal ?? findFromSpecifier(source, next);
         if (candidate) imports.push({ specifier: candidate.value, index: cursor });
       }
+    } else if (token.value === "export") {
+      const candidate = findFromSpecifier(source, token.end);
+      if (candidate) imports.push({ specifier: candidate.value, index: cursor });
     } else if (token.value === "require") {
       const next = skipTrivia(source, token.end);
       if (source[next] === "(") {
