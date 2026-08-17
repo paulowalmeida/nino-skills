@@ -25,6 +25,7 @@ try {
   write("UI/organisms/Table.tsx", "export function Table() { return null; }\n");
   write("UI/templates/User.tsx", 'import { Table } from "../organisms/Table";\nexport function User() { return <Table />; }\n');
   write("UI/pages/User.tsx", 'import { User } from "../templates/User";\nexport function UserPage() { return <User />; }\n');
+  write("UI/layouts/App.tsx", 'import { UserPage } from "../pages/User";\nexport function AppLayout() { return <UserPage />; }\n');
   write("states/useSessionStore.ts", "export const store = {};\n");
   write("tsconfig.app.json", JSON.stringify({ compilerOptions: { baseUrl: ".", paths: { "@states/*": ["states/*"] } } }));
 
@@ -62,9 +63,15 @@ try {
   write("UI/atoms/InvalidComposition.tsx", 'import { Search } from "../molecules/Search";\n');
   result = run();
   assert.equal(result.status, 1, "An Atom importing a Molecule must fail.");
-  assert.match(result.stderr, /atom-cannot-compose-higher-ui/);
+  assert.match(result.stderr, /atom-cannot-compose-peer-or-higher-ui/);
 
   fs.rmSync(path.join(tempRoot, "UI/atoms/InvalidComposition.tsx"));
+  write("UI/atoms/InvalidAtomPeer.tsx", 'import { Button } from "./Button";\n');
+  result = run();
+  assert.equal(result.status, 1, "An application Atom importing another Atom must fail.");
+  assert.match(result.stderr, /atom-cannot-compose-peer-or-higher-ui/);
+
+  fs.rmSync(path.join(tempRoot, "UI/atoms/InvalidAtomPeer.tsx"));
   write("UI/pages/ValidPage.tsx", 'import { User } from "../templates/User";\n');
   result = run();
   assert.equal(result.status, 0, "A Page importing its Template must remain valid.");
@@ -72,7 +79,7 @@ try {
   write("UI/pages/InvalidPage.tsx", 'import { Table } from "../organisms/Table";\n');
   result = run();
   assert.equal(result.status, 1, "A Page importing an Organism directly must fail.");
-  assert.match(result.stderr, /page-cannot-compose-below-template/);
+  assert.match(result.stderr, /page-cannot-compose-peer-or-below-template/);
 
   fs.rmSync(path.join(tempRoot, "UI/pages/InvalidPage.tsx"));
   write("UI/pages/IndirectPage.tsx", 'import { User } from "../templates/User";\n');
@@ -80,6 +87,12 @@ try {
   assert.equal(result.status, 0, "A Page may reach an Organism through its Template.");
 
   fs.rmSync(path.join(tempRoot, "UI/pages/IndirectPage.tsx"));
+  write("UI/layouts/InvalidLayout.tsx", 'import { Table } from "../organisms/Table";\n');
+  result = run();
+  assert.equal(result.status, 1, "A Layout importing an Organism directly must fail.");
+  assert.match(result.stderr, /layout-cannot-compose-ui-below-page/);
+
+  fs.rmSync(path.join(tempRoot, "UI/layouts/InvalidLayout.tsx"));
   write("UI/atoms/Unresolved.tsx", 'import thing from "@states/missing";\n');
   result = run();
   assert.equal(result.status, 2, "Unresolved local imports must fail closed.");
