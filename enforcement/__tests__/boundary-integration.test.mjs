@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "nino-boundaries-"));
 const src = path.join(root, "src");
-const enforcement = path.resolve(new URL("..", import.meta.url).pathname, "..");
+const enforcement = path.resolve(new URL("..", import.meta.url).pathname);
 const checker = path.join(enforcement, "check-architecture-boundaries.mjs");
 const policy = path.join(enforcement, "architecture-boundaries.json");
 
