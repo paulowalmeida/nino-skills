@@ -23,6 +23,19 @@ If project rules conflict and no explicit precedence exists:
 - **DO NOT arbitrarily choose the more convenient rule**;
 - stop implementation and identify the conflict.
 
+## Technical Standards and Provenance
+
+Project rules may be based on either:
+
+- a **project-specific decision**, which is authoritative because the project explicitly chose it; or
+- an **external technical standard/methodology**, which MUST be tied to an identifiable authoritative source.
+
+When a rule is based on an external standard, the agent **MUST NOT silently replace or reinterpret that standard** using memory, preference, or a different convention.
+
+When a rule names an external implementation, tool, algorithm, or measurement, the named implementation/version/configuration is authoritative until the repository explicitly changes it.
+
+When a project-specific rule is stricter than an external standard, **the project rule wins**.
+
 ## Mandatory Preflight Before Any Change
 
 Before any `Write`, `Edit`, file creation, deletion, rename, or move, the agent **MUST complete these steps in order**:
