@@ -1,0 +1,3 @@
+interface:
+  display_name: "Complexity Refactoring"
+  short_description: "Review and refactor structural complexity"
