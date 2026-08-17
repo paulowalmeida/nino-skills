@@ -16,28 +16,38 @@ function write(relativePath, content) {
 }
 
 function run() {
-  const result = spawnSync(process.execPath, [checker, tempRoot], { encoding: "utf8" });
-  return result;
+  return spawnSync(process.execPath, [checker, tempRoot], { encoding: "utf8" });
 }
 
 try {
   write("UI/atoms/Button.tsx", 'import { useState } from "react";\nexport function Button() { return null; }\n');
   write("UI/molecules/Search.tsx", 'export function Search() { return null; }\n');
   write("UI/organisms/Table.tsx", 'export function Table() { return null; }\n');
+  write("states/useStore.ts", "export const store = {};\n");
 
   let result = run();
   assert.equal(result.status, 0, result.stderr);
 
-  write("UI/atoms/Invalid.tsx", 'import useStore from "../../stores/useStore";\nexport function Invalid() { return null; }\n');
+  write(
+    "UI/atoms/Invalid.tsx",
+    'import { store } from "../../states/useStore";\nexport function Invalid() { return store; }\n',
+  );
 
   result = run();
-  assert.equal(result.status, 1, "A presentation-layer store import must fail.");
-  assert.match(result.stderr, /presentation-cannot-import-zustand/);
+  assert.equal(result.status, 1, "A presentation-layer state import must fail.");
+  assert.match(result.stderr, /presentation-cannot-import-state/);
 
-  write("services/Valid.ts", 'import useStore from "../stores/useStore";\nexport function Valid() { return useStore; }\n');
+  write(
+    "services/Valid.ts",
+    'import { store } from "../states/useStore";\nexport function Valid() { return store; }\n',
+  );
 
   result = run();
   assert.equal(result.status, 1, "The existing invalid atom should still fail while service imports remain allowed.");
+
+  fs.rmSync(path.join(tempRoot, "UI/atoms/Invalid.tsx"));
+  result = run();
+  assert.equal(result.status, 0, result.stderr);
 
   console.log("Architecture boundary checker tests passed.");
 } finally {
