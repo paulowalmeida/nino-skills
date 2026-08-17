@@ -55,6 +55,22 @@
       "sourceDirectories": ["UI/layouts"],
       "targetDirectories": ["UI/layouts", "UI/templates", "UI/organisms", "UI/molecules", "UI/atoms"],
       "message": "Layouts must not directly compose another Layout or lower UI layer; they may compose Pages."
+    },
+    {
+      "id": "guard-cannot-compose-presentation",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["guards"],
+      "targetDirectories": ["UI/atoms", "UI/molecules", "UI/organisms", "UI/templates", "UI/pages"],
+      "message": "Guards must enforce access and routing concerns without composing presentation components."
+    },
+    {
+      "id": "provider-cannot-compose-presentation",
+      "severity": "block",
+      "mode": "direct",
+      "sourceDirectories": ["providers"],
+      "targetDirectories": ["UI/atoms", "UI/molecules", "UI/organisms", "UI/templates", "UI/pages"],
+      "message": "Providers must provide infrastructure or context without composing application presentation components."
     }
   ]
 }
