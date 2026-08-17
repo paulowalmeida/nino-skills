@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
+import { runSkillHook } from './hook-kit.mjs'
+
 const match = (path) => /\/src\/layouts\//.test(path)
 
 const violations = (path, toolName, lines) => {
-  if (!match(path)) return []
-
   const found = []
   lines.forEach((line, index) => {
     if (/from ['"]@pages\//.test(line)) {
@@ -14,4 +14,4 @@ const violations = (path, toolName, lines) => {
   return found
 }
 
-export { match, violations }
+await runSkillHook({ name: 'enforce-layouts', match, violations })
