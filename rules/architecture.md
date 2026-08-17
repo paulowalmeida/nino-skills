@@ -6,6 +6,18 @@ When a rule in this file applies, the agent **MUST** obey it.
 
 The absence of explicit permission **MUST NOT** be interpreted as permission to create an exception.
 
+## External Methodology Foundation
+
+The Atomic Design terminology used by this project follows the model introduced by Brad Frost: Atoms, Molecules, Organisms, Templates, and Pages describe progressively larger levels of interface composition. The distinction between Molecules as coherent combinations of Atoms, Organisms as larger interface sections, Templates as page-level structures, and Pages as concrete instances is part of the methodology's intended model.
+
+Authoritative reference:
+
+```text
+https://atomicdesign.bradfrost.com/chapter-2/
+```
+
+This project may impose **stricter dependency and composition rules** than the external methodology. When that happens, the Nino project rule wins.
+
 ## Atomic Design
 
 The UI follows this hierarchy:
