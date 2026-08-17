@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {
+      "id": "presentation-cannot-import-state",
+      "severity": "block",
+      "sourceDirectories": ["UI/atoms", "UI/molecules", "UI/organisms"],
+      "targetDirectories": ["states"],
+      "message": "Presentation components must not depend on state modules, directly or transitively."
+    }
+  ]
+}
