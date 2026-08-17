@@ -26,15 +26,26 @@ assert.equal(resolved, path.join(src, "states", "useSessionStore.ts"));
 assert.equal(resolveImport("@atoms/Button", importer, config), importer);
 assert.equal(resolveImport("@states/missing", importer, config), null);
 
-const imports = extractImports([
-  'import x from "@states/useSessionStore";',
-  'export { y } from "./other";',
-  'const z = require("./runtime");',
-].join("\n"));
+const imports = extractImports(`
+  // import ignored from "./comment";
+  const text = "import ignored from './string'";
+  import {
+    value,
+  } from "@states/useSessionStore";
+  export {
+    value as other,
+  } from "./other";
+  const z = require("./runtime");
+  const lazy = import("./lazy");
+  const meta = import.meta.url;
+  const template = `import ignored from "./template"`;
+`);
+
 assert.deepEqual(imports.map(({ specifier }) => specifier), [
   "@states/useSessionStore",
   "./other",
   "./runtime",
+  "./lazy",
 ]);
 
 fs.rmSync(root, { recursive: true, force: true });
