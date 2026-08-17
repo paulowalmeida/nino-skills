@@ -46,15 +46,15 @@
       "mode": "direct",
       "sourceDirectories": ["UI/pages"],
       "targetDirectories": ["UI/pages", "UI/organisms", "UI/molecules", "UI/atoms"],
-      "message": "Pages must not directly compose another Page or lower UI layers; composition must go through a Template."
+      "message": "Pages must not directly compose another Page or lower UI layers; lower-level composition belongs in a Template."
     },
     {
-      "id": "layout-cannot-compose-ui-below-page",
+      "id": "layout-cannot-compose-lower-ui",
       "severity": "block",
       "mode": "direct",
       "sourceDirectories": ["UI/layouts"],
       "targetDirectories": ["UI/layouts", "UI/templates", "UI/organisms", "UI/molecules", "UI/atoms"],
-      "message": "Layouts must compose Pages and must not directly compose lower UI layers."
+      "message": "Layouts must not directly compose another Layout or lower UI layer; they may compose Pages."
     }
   ]
 }
