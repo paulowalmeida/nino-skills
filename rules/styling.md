@@ -8,11 +8,11 @@ The absence of explicit permission **MUST NOT** be interpreted as permission to 
 
 ## Project Styling Foundation
 
-The Nino application uses **Tailwind CSS v4** as its primary styling system, with `clsx` and `tailwind-merge` available for conditional and conflict-resolved class composition. The repository explicitly depends on Tailwind CSS, `@tailwindcss/postcss`, `@tailwindcss/vite`, `clsx`, and `tailwind-merge`. fileciteturn102file0L2-L6
+The Nino application uses **Tailwind CSS v4** as its primary styling system, with `clsx` and `tailwind-merge` available for conditional and conflict-resolved class composition. The repository explicitly depends on Tailwind CSS, `@tailwindcss/postcss`, `@tailwindcss/vite`, `clsx`, and `tailwind-merge`.
 
-The Design System is also implemented with Tailwind CSS v4 and uses CSS-first theme variables through `@theme`, source registration through `@source`, and custom utilities through `@utility`. fileciteturn105file0L2-L6
+The Design System is also implemented with Tailwind CSS v4 and uses CSS-first theme variables through `@theme`, source registration through `@source`, and custom utilities through `@utility`.
 
-Tailwind's official documentation describes utility classes as the primary styling mechanism and CSS customizations as an explicit escape hatch when needed. Tailwind v4 uses CSS-first configuration, theme variables, native cascade layers, and `@utility` for custom utilities. citeturn112577search4turn112577search1turn112577search2turn112577search6
+Tailwind's official documentation describes utility classes as the primary styling mechanism and CSS customizations as an explicit escape hatch when needed. Tailwind v4 uses CSS-first configuration, theme variables, native cascade layers, and `@utility` for custom utilities.
 
 ## Primary Styling Rule
 
@@ -22,7 +22,7 @@ The agent **MUST NOT** create bespoke styling systems, CSS-in-JS solutions, arbi
 
 The agent **MUST NOT** replace Tailwind with CSS Modules, styled-components, Emotion, inline-style objects, or another styling mechanism merely because it is more familiar or locally convenient.
 
-Next.js officially supports multiple styling approaches, including Tailwind and CSS Modules; Nino's project decision is to use the existing Tailwind-based stack unless a specific rule or component contract requires otherwise. citeturn112577search0
+Nino's project decision is to use the existing Tailwind-based stack unless a specific rule or component contract requires otherwise.
 
 ## Design System First
 
@@ -30,21 +30,9 @@ Styling MUST follow `rules/design-system.md`.
 
 Before inventing colors, typography, spacing, radii, shadows, focus states, animations, or component styling, the agent **MUST inspect the existing Design System tokens and component implementation**.
 
-The Design System's theme variables are the project's source of truth for shared visual tokens when the relevant token exists. The current DS defines typography, brand colors, input colors, and structural radii through Tailwind `@theme` variables. fileciteturn105file0L2-L6
+The Design System's theme variables are the project's source of truth for shared visual tokens when the relevant token exists.
 
 The agent **MUST NOT** recreate a DS token as a local arbitrary value when the required semantic token already exists.
-
-Example:
-
-```tsx
-// ✅ reuse an existing semantic token
-className="bg-brand text-brand-foreground"
-```
-
-```tsx
-// ❌ duplicate an existing project token with a raw value
-className="bg-[#ff6b00] text-white"
-```
 
 A raw value is permitted only when the design requirement genuinely requires a value that is not represented by the project token system and the reason is concrete.
 
@@ -63,8 +51,6 @@ This applies to:
 - animation timing/easing when standardized;
 - other recurring visual values.
 
-Tailwind documents theme variables as the mechanism for defining design tokens that become reusable utility APIs. citeturn112577search6
-
 A token **MUST NOT** be introduced solely to name a value used once unless naming it establishes a meaningful project-level contract.
 
 ## Arbitrary Values
@@ -75,39 +61,11 @@ The agent **MUST NOT** use arbitrary values as a substitute for searching existi
 
 The agent **MUST NOT** use arbitrary values merely to imitate an existing Design System token or avoid using an existing utility.
 
-Bad pattern:
-
-```tsx
-className="mt-[17px]"
-```
-
-when the intended spacing already has an appropriate project utility/token.
-
-Good use:
-
-```tsx
-className="grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]"
-```
-
-when the exact layout requirement is not represented by an existing semantic utility.
-
-Tailwind v4 intentionally supports dynamic utility values and arbitrary values, but that flexibility does **not** override Nino's token-first rule. citeturn112577search2
-
 ## Conditional Classes
 
 Conditional styling **MUST** use the project's established class-composition mechanism.
 
-When class values are conditional or composed from multiple sources, the agent **SHOULD** use the project's `clsx` + `tailwind-merge` pattern rather than manual string concatenation. The DS implements this as `mergeClasses`. fileciteturn107file0L2-L6
-
-Example:
-
-```ts
-mergeClasses(
-  baseClasses,
-  isActive && activeClasses,
-  className
-)
-```
+When class values are conditional or composed from multiple sources, the agent **SHOULD** use the project's `clsx` + `tailwind-merge` pattern rather than manual string concatenation when that pattern is available. The Design System's established helper is the preferred implementation for this responsibility.
 
 The agent **MUST NOT** create a second `cn`, `classNames`, `cx`, or equivalent helper when an established project helper already exists for the same responsibility.
 
@@ -127,8 +85,6 @@ Responsive behavior **MUST** use Tailwind's responsive variants and the project'
 
 The agent **MUST NOT** invent a parallel breakpoint scale in component code.
 
-Tailwind documents responsive variants as the standard mechanism for applying utilities conditionally at breakpoints. citeturn112577search3
-
 Responsive rules **MUST** represent meaningful layout behavior rather than arbitrary breakpoint-specific overrides.
 
 ## State and Accessibility Styling
@@ -143,8 +99,6 @@ Interactive elements **MUST** define required visual states through the existing
 - invalid;
 - loading;
 - expanded/open/closed.
-
-Tailwind's state variants are the intended mechanism for conditionally applying utilities based on interaction state. citeturn112577search8
 
 The agent **MUST NOT** remove a visible focus indicator without replacing it with an equally clear accessible focus treatment.
 
@@ -175,8 +129,6 @@ Acceptable reasons include:
 - global/base styles;
 - custom utilities intentionally registered in the Design System.
 
-Tailwind itself explicitly supports plain CSS for cases where utility classes are insufficient. citeturn112577search1
-
 When custom CSS is required, the agent **MUST place it at the narrowest correct scope**.
 
 The agent **MUST NOT** add unrelated global CSS for a local component requirement.
@@ -186,8 +138,6 @@ The agent **MUST NOT** add unrelated global CSS for a local component requiremen
 Shared styling behavior that truly represents a reusable utility **MAY** be defined as a Tailwind v4 custom utility using `@utility` in the appropriate styling source.
 
 The agent **MUST NOT** create custom utilities merely to hide long class strings or avoid learning existing utilities.
-
-Tailwind v4 explicitly defines `@utility` as the API for custom utilities. citeturn112577search9
 
 Custom utilities **MUST** have a clear semantic responsibility and a demonstrated reuse case.
 
@@ -202,8 +152,6 @@ Global CSS **MUST** be reserved for genuinely global concerns such as:
 - global third-party integration requirements.
 
 The agent **MUST NOT** add component-specific selectors to global CSS when the same concern can be expressed locally through the component or a scoped style mechanism.
-
-The current DS global stylesheet contains theme variables, source registration, shared animations, and a custom utility; these are valid examples of system-level styling concerns. fileciteturn105file0L2-L6
 
 ## Inline Styles
 
@@ -221,9 +169,7 @@ When motion is a reusable visual behavior, the agent **MUST** check the Design S
 
 The agent **MUST NOT** introduce JavaScript-driven animation when CSS/Tailwind state or transition mechanisms are sufficient.
 
-When an existing component uses an animation library such as Framer Motion as part of its contract, consumers **MUST NOT** recreate equivalent motion locally without a concrete requirement.
-
-The current DS uses both Tailwind/CSS animations and Framer Motion in component implementations, so the mechanism is responsibility-dependent rather than a universal ban on either approach. fileciteturn105file0L2-L6 fileciteturn106file0L2-L6
+When an existing component uses an animation library as part of its contract, consumers **MUST NOT** recreate equivalent motion locally without a concrete requirement.
 
 ## Naming and Organization of Styling Code
 
@@ -261,7 +207,7 @@ Global/base styling
 
 The agent **MUST NOT** duplicate an existing Design System visual implementation locally.
 
-Before introducing local styling, the agent **MUST search for:
+Before introducing local styling, the agent **MUST** search for:
 
 1. the relevant Design System component;
 2. existing theme tokens;
@@ -347,9 +293,8 @@ The project styling foundation is informed by:
 - Tailwind CSS — Responsive design: https://tailwindcss.com/docs/responsive-design
 - Tailwind CSS — Hover, focus, and other states: https://tailwindcss.com/docs/hover-focus-and-other-states
 - Tailwind CSS v4 announcement / architecture: https://tailwindcss.com/blog/tailwindcss-v4
-- Next.js — CSS Styling: https://nextjs.org/learn/dashboard-app/css-styling
 
-External documentation defines the framework behavior and mechanisms. **Nino-specific design-system, scope, and architectural rules remain authoritative for this project.**
+External documentation defines framework behavior and mechanisms. **Nino-specific Design System, scope, and architectural rules remain authoritative for this project.**
 
 ## Final Rule
 
