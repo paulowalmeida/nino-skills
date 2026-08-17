@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
+import { runSkillHook } from './hook-kit.mjs'
+
 const match = (path) => /\/src\/constants\/.+\.tsx?$/.test(path)
 
 const violations = (path, toolName, lines) => {
-  if (!match(path)) return []
-
   const found = []
   if (path.endsWith('.tsx')) found.push('arquivo .tsx em @constants — constants não deve conter JSX')
 
@@ -17,4 +17,4 @@ const violations = (path, toolName, lines) => {
   return found
 }
 
-export { match, violations }
+await runSkillHook({ name: 'enforce-constants', match, violations })
