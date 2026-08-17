@@ -8,15 +8,16 @@ The absence of explicit permission **MUST NOT** be interpreted as permission to 
 
 ## External Methodology Foundation
 
-The Atomic Design terminology used by this project follows the model introduced by Brad Frost: Atoms, Molecules, Organisms, Templates, and Pages describe progressively larger levels of interface composition. The distinction between Molecules as coherent combinations of Atoms, Organisms as larger interface sections, Templates as page-level structures, and Pages as concrete instances is part of the methodology's intended model.
+The Atomic Design terminology used by this project follows the model introduced by Brad Frost: Atoms, Molecules, Organisms, Templates, and Pages describe progressively larger levels of interface composition. Molecules combine Atoms into relatively simple modules, Organisms form distinct interface sections, Templates provide page-level structures, and Pages are concrete instances of Templates.
 
-Authoritative reference:
+Authoritative references:
 
 ```text
 https://atomicdesign.bradfrost.com/chapter-2/
+https://atomicdesign.bradfrost.com/outline/
 ```
 
-This project may impose **stricter dependency and composition rules** than the external methodology. When that happens, the Nino project rule wins.
+This project may impose **stricter dependency, state, and composition rules** than the external methodology. When that happens, the Nino project rule wins.
 
 ## Atomic Design
 
@@ -44,7 +45,7 @@ An Atom is the smallest UI unit with one clear responsibility.
 
 **MUST:**
 - represent one visual/functional responsibility;
-- remain independent of business logic and infrastructure;
+- remain independent of business logic and application infrastructure;
 - receive external data and behavior through props/dependency injection when necessary;
 - reuse a Design System Atom when the DS already satisfies the requirement;
 - be application-specific when the DS has no suitable solution.
@@ -57,7 +58,7 @@ An Atom is the smallest UI unit with one clear responsibility.
 - be created only to group other Atoms;
 - discover, create, or fetch external dependencies on its own.
 
-React-local mechanisms used solely for the Atom's own UI behavior, such as `useState`, `useReducer`, `useId`, `useRef`, or equivalent local React APIs, are **not** application-state access and are allowed when they are necessary for the Atom's own interaction.
+React-local mechanisms used solely for the Atom's own UI behavior, such as `useState`, `useReducer`, `useId`, `useRef`, or equivalent local React APIs, are **not** application-state access and are allowed when necessary for the Atom's own interaction.
 
 **Before creating an Atom, the agent MUST:**
 
@@ -104,7 +105,7 @@ An Organism is a significant UI section composed of Molecules and/or Atoms.
 
 If a group of Atoms forms a coherent, reusable functional unit, it **MUST** be extracted into a Molecule.
 
-Local React state is allowed only when it belongs exclusively to the Organism's own UI behavior. Shared/application state belongs outside the presentation layer according to the state rules.
+Local React state is allowed only when it belongs exclusively to the Organism's own UI behavior. Shared/application state follows the explicit state-consumer rules in `rules/hooks.md`.
 
 ### Template
 
@@ -113,16 +114,20 @@ A Template is responsible for the visual and structural composition of a page.
 **MUST:**
 - compose Organisms, Molecules, and/or Atoms;
 - skip lower levels only when necessary to represent the structure correctly;
-- represent a reusable page structure without depending on a concrete route or concrete application data.
+- represent a reusable page structure without directly depending on a concrete route;
+- consume application state only when explicitly authorized by `rules/hooks.md`.
 
 **MUST NOT:**
 - import or render another Template;
-- access Zustand, application-state Hooks, Services, or APIs directly;
+- access Services or APIs directly;
 - contain business logic;
 - assume responsibilities specific to a Page;
-- decide which concrete route is active.
+- decide which concrete route is active;
+- pass the Zustand Store Hook to a prohibited lower UI layer.
 
-Local React UI state is allowed only when it belongs exclusively to the Template's own structural interaction. Shared/application state is not local UI state.
+A Template **MAY** consume a Zustand Store Hook directly because Templates are explicitly authorized application-state consumers under `rules/hooks.md`. The Template **MUST** still keep business rules outside the presentation layer and **MUST** select only the state required by its responsibility.
+
+Local React UI state is allowed when it belongs exclusively to the Template's own structural interaction.
 
 ### Page
 
@@ -131,6 +136,7 @@ A Page represents a concrete application route/context and is the **UI governanc
 **MUST:**
 - coordinate page context, state, data, and dependencies;
 - use **exactly one Template as its visual composition layer**;
+- consume application state through the authorized Zustand Store Hook when required;
 - pass the Template the required data, actions, and dependencies.
 
 **MUST NOT:**
@@ -138,13 +144,15 @@ A Page represents a concrete application route/context and is the **UI governanc
 - implement visual composition that belongs to the Template;
 - become a monolithic visual component;
 - manually choose visual components below the Template;
-- render multiple Templates as a workaround for avoiding the composition of a suitable Template.
+- render multiple Templates as a workaround for avoiding the composition of a suitable Template;
+- pass the Zustand Store Hook to a prohibited lower UI layer.
 
 **Allowed:**
 
 ```tsx
-// ✅ Page → Template
-return <UserTemplate user={user} onSelect={handleSelect} />
+// ✅ Page → Zustand Store Hook → Template
+const user = useUserStore((state) => state.user)
+return <UserTemplate user={user} />
 ```
 
 **Forbidden:**
@@ -164,7 +172,7 @@ return <UserSearch />
 return <Button onClick={handleClick}>Save</Button>
 ```
 
-## Layout
+### Layout
 
 Layout is a structural layer outside Atomic Design.
 
@@ -172,17 +180,19 @@ Layout is a structural layer outside Atomic Design.
 - provide the application's persistent chrome;
 - wrap Pages;
 - control shared structure such as header, sidebar, navigation, and persistent content areas;
-- use the application's route-composition mechanism to render the active Page.
+- use the application's route-composition mechanism to render the active Page;
+- consume Zustand application state directly only when the responsibility requires it and as authorized by `rules/hooks.md`.
 
 **MUST NOT:**
 - implement Page-specific visual composition;
 - manually import and choose which Page is active;
 - contain route-specific business logic;
-- depend on internal details of a specific Page.
+- depend on internal details of a specific Page;
+- pass the Zustand Store Hook to a prohibited UI layer.
 
 ## Dependency Matrix
 
-The only permitted UI composition dependencies are:
+The only permitted **UI composition** dependencies are:
 
 ```text
 Page       → Template
@@ -193,7 +203,9 @@ Atom       → no UI layer
 Layout     → Page
 ```
 
-Any UI dependency outside this matrix is **FORBIDDEN**.
+State consumption is governed separately by `rules/hooks.md` and is **not** a UI composition dependency.
+
+Any UI composition dependency outside this matrix is **FORBIDDEN**.
 
 In particular:
 
@@ -236,6 +248,7 @@ Before writing a new TSX file, the agent **MUST be able to answer**:
 4. Which existing components were evaluated?
 5. Which Design System solution was evaluated?
 6. Why is a new unit necessary?
+7. If state is consumed directly, why is this layer authorized to consume that source of truth?
 
 If any required answer cannot be determined with sufficient confidence, the agent **MUST NOT invent a solution**. It must continue investigating or report the ambiguity.
 
@@ -262,7 +275,19 @@ The agent **MUST NOT:**
 - rename a component to pretend it belongs to another layer;
 - create an artificial abstraction to evade a rule;
 - use indirect imports, re-exports, aliases, or wrappers to access a forbidden layer;
-- move a dependency to a non-TSX file solely to bypass a TSX-layer restriction without preserving the same architectural boundary.
+- move a dependency to a non-TSX file solely to bypass a TSX-layer restriction without preserving the same architectural boundary;
+- pass a Store Hook through props, context, wrappers, or intermediary components solely to bypass a prohibited state-consumption boundary.
+
+## External Foundation vs. Nino Constraint
+
+Atomic Design provides the terminology and mental model. The following are **Nino-specific architectural constraints** and are intentionally stricter than the external methodology:
+
+- Page MUST compose through exactly one Template;
+- Pages, Templates, Layouts, Guards, Loaders, Providers, and approved Custom Hooks may consume Zustand application state;
+- Atoms, Molecules, and Organisms MUST NOT consume Zustand application state;
+- UI composition dependencies MUST follow the matrix above.
+
+The agent **MUST NOT** reinterpret an external methodology statement as permission to bypass an explicit Nino constraint.
 
 ## Implementation Principle
 
