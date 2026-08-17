@@ -68,6 +68,16 @@ Each item MUST be exactly one of `VIOLATION`, `LEGACY`, `EXCEPTION`, `NEEDS-EVID
 
 `NEEDS-EVIDENCE` must name the missing caller/provider/lifecycle evidence. Never downgrade it to PASS because the local file looks plausible.
 
+## Resolution Protocol
+
+- **VIOLATION:** provide the evidence and required correction.
+- **LEGACY:** identify the out-of-scope violation; it MUST NOT justify new code.
+- **EXCEPTION:** record the explicit project authorization and exact scope. No inferred or convenience exceptions.
+- **NEEDS-EVIDENCE:** name the missing evidence and next concrete inspection. It remains unresolved until evidence is obtained or review is explicitly closed as incomplete.
+- **PASS:** may be declared only after the Final Review Gate is satisfied.
+
+An unresolved `NEEDS-EVIDENCE` item MUST NOT be silently treated as PASS. If required evidence cannot be obtained, the final status is **INCOMPLETE**.
+
 ## Evidence Standard
 
 Every confirmed finding MUST include exact file/line, state/effect category, current owner, expected owner, dependency/lifecycle evidence, impact, and minimal correction. Retrospective PASS requires inspection of the relevant consumer graph.
@@ -89,4 +99,4 @@ Do not split Hooks because they are long, globalize state for convenience, or re
 
 ## Final Review Gate
 
-Before PASS, confirm authoritative source, state category, narrowest owner, effects/lifecycle, Hook cohesion, provider/store responsibility, returned contract, and relevant consumer graph were inspected.
+Before PASS, confirm authoritative source, state category, narrowest owner, effects/lifecycle, Hook cohesion, provider/store responsibility, returned contract, relevant consumer graph, and objective enforcement results were inspected.
