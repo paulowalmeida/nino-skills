@@ -2,23 +2,31 @@
 
 This file defines **mandatory constraints for any UI implementation**.
 
+When a rule in this file applies, the agent **MUST** obey it.
+
+The absence of explicit permission **MUST NOT** be interpreted as permission to create an exception.
+
 ## Official Source
 
-The `nino-app` Design System is located at:
+The `nino-app` Design System source is located at:
 
 ```text
 packages/ds/src/components/
 ```
 
-This code is the **official source of truth** for UI component reuse.
+The package's public consumer entry point is `@nino/ds`. The package exports its component catalog through its public package entry point. fileciteturn90file0L2-L6 fileciteturn91file0L2-L6
 
-The DS currently contains, among others, components such as `Button`, `Dialog`, `Card`, `Input`, `Label`, `Toast`, `Alert`, `Switch`, `Slider`, `Drawer`, `Select`, `Avatar`, `Popover`, `Spinner`, `Tabs`, `Menu`, `Table`, `Badge`, `Tooltip`, and `Stepper`.
+The current component catalog is defined by the current DS source, including its component export surface. The catalog is **not** defined by this document and MUST NOT be inferred from memory. fileciteturn92file0L2-L6
 
-The list above is illustrative only. **Current DS source code always takes precedence over memory or documentation examples.**
+This project follows a **DS-first, not DS-only** approach.
+
+## External Technical Foundation
+
+For UI testing and accessibility expectations, the project SHOULD align with the same user-facing principles used by the testing stack. For component implementation itself, the current Nino DS source is authoritative.
+
+The DS is an application/project constraint, not an external methodology that the agent may reinterpret.
 
 ## DS-First Rule
-
-The Design System is **DS-first, not DS-only**.
 
 Before creating, editing, replacing, or introducing any application UI, the agent **MUST** follow this order:
 
@@ -30,7 +38,7 @@ Before creating, editing, replacing, or introducing any application UI, the agen
 6. if it does not satisfy the requirement, evaluate composition with the DS before considering a local implementation;
 7. only then consider an application-specific implementation.
 
-**It is FORBIDDEN to create a custom implementation before completing the required DS investigation and composition assessment.**
+It is **FORBIDDEN** to create a custom implementation before completing the required DS investigation and composition assessment.
 
 ## What "Satisfies the Requirement" Means
 
@@ -45,7 +53,7 @@ The following are **NOT sufficient reasons** to abandon a suitable DS component:
 - the assumption that a local version would be simpler;
 - unfamiliarity with the DS API.
 
-A functional requirement that the DS component cannot support compatibly **MAY justify composition or a local implementation**, subject to the architecture rules.
+A functional requirement that the DS component cannot support compatibly **MAY** justify composition or a local implementation, subject to the architecture rules.
 
 ## Do Not Duplicate the DS
 
@@ -92,7 +100,7 @@ The agent **MUST NOT declare the DS inadequate without evidence from the current
 
 ## Composition Before Duplication
 
-When the DS does not solve the requirement by itself, the agent **MUST evaluate composition before duplicating an implementation**.
+When the DS does not solve the requirement by itself, the agent **MUST** evaluate composition before duplicating an implementation.
 
 Example:
 
@@ -121,13 +129,13 @@ It is forbidden to conclude that "the DS does not have it" based only on:
 - old documentation without confirmation in the current source;
 - failure to find an exact filename match.
 
-When a plausible candidate exists, the agent **MUST inspect its implementation and/or relevant types before rejecting it**.
+When a plausible candidate exists, the agent **MUST** inspect its implementation and/or relevant types before rejecting it.
 
-When the requirement is broad, the search **MUST include semantically related candidates**, not only exact-name matches.
+When the requirement is broad, the search **MUST** include semantically related candidates, not only exact-name matches.
 
 ## Decision Evidence
 
-For any new UI component, UI replacement, or local UI abstraction, the agent **MUST be able to identify**:
+For any new UI component, UI replacement, or local UI abstraction, the agent **MUST** be able to identify:
 
 ```text
 1. the requested requirement;
@@ -150,21 +158,18 @@ The reason must be specific and supported by the current repository state.
 
 ## DS Imports
 
-When the project exposes a public or official import API for the DS, the agent **MUST use that API**.
-
-It is **FORBIDDEN** to access internal DS files through deep paths when a public consumer entry point exists.
-
-Conceptual example:
+The agent **MUST** use the DS public package API when consuming DS components from application code:
 
 ```tsx
-// ✅ public DS API
-import { Button } from '@ds/components/Button'
-
-// ❌ arbitrary internal path when not a public API
-import { Button } from '@ds/components/Button/Button'
+// ✅ verified public package API
+import { Button } from '@nino/ds'
 ```
 
-The actual repository implementation is authoritative for determining the official import path.
+Direct deep imports into `packages/ds/src/**` **MUST NOT** be used from consuming application code when the public package API exposes the component.
+
+The agent **MUST NOT** invent or assume a deep import path merely because a matching source file exists.
+
+The current package exports and package metadata are authoritative for the public API. fileciteturn90file0L2-L6 fileciteturn91file0L2-L6
 
 ## Do Not Modify the DS for Convenience
 
@@ -178,7 +183,7 @@ A Design System change is an explicit scope/architecture change and must be requ
 
 ## Mandatory UI Creation Procedure
 
-Before writing UI TSX, the agent **MUST complete**:
+Before writing UI TSX, the agent **MUST** complete:
 
 ```text
 [ ] UI requirement identified
@@ -187,12 +192,13 @@ Before writing UI TSX, the agent **MUST complete**:
 [ ] Relevant candidate implementations/types inspected
 [ ] Composition evaluated
 [ ] Existing application components searched
+[ ] Public DS API verified
 [ ] DS vs. local decision made with concrete evidence
 [ ] Atomic Design layer determined
 [ ] Only then: implementation
 ```
 
-**DO NOT skip a relevant step to accelerate the task.**
+DO NOT skip a relevant step to accelerate the task.
 
 ## Verification Before Completion
 
@@ -200,7 +206,7 @@ Before completing a UI task, the agent **MUST verify**:
 
 - whether the custom implementation duplicated something already provided by the DS;
 - whether the DS component used actually matches the requirement;
-- whether imports follow the official API;
+- whether imports use the verified public DS API;
 - whether any decision not to reuse the DS has a concrete and repository-supported justification;
 - whether the resulting solution follows the architecture rules;
 - whether the final diff contains any unrequested local UI duplication or DS modifications.
@@ -216,13 +222,13 @@ Passing tests or lint **does not by itself prove** that the DS-first rule was fo
 
 ## Enforcement
 
-Objective rules should be protected by automated mechanisms whenever possible.
+Objective rules **MUST** be protected by automated mechanisms whenever technically possible.
 
 ### Minimum Expected Enforcement
 
-1. **Imports:** detect forbidden DS import paths and DS imports outside the official API.
-2. **Catalog:** maintain a machine-readable representation of DS components, official imports, and responsibilities.
-3. **Objective duplication:** detect clear local recreations of DS primitives/components.
+1. **Imports:** reject direct deep imports into `packages/ds/src/**` from consuming application code when `@nino/ds` exposes the component.
+2. **Catalog:** maintain a machine-readable representation of DS components and their official public exports.
+3. **Objective duplication:** detect clear local recreations of DS primitives/components where AST or semantic analysis can do so reliably.
 4. **Architecture:** detect prohibited-layer implementations that recreate DS components instead of reusing them.
 5. **Blocking:** an objective violation MUST fail the check.
 
@@ -232,10 +238,10 @@ Where possible, failure output should include:
 - line;
 - violated rule;
 - expected DS component;
-- official import path.
+- official package API.
 
 The agent **MUST fix the cause**. It is **FORBIDDEN to disable, weaken, suppress, or bypass the check** to allow the change.
 
 ## Final Rule
 
-> **Searching the Design System is mandatory before creating or replacing any UI. Reusing a suitable existing solution is mandatory. Creating a custom solution requires a real, current, verifiable gap in the DS, and composition must be considered before duplication.**
+> **Searching the Design System is mandatory before creating or replacing any UI. Reusing a suitable existing solution is mandatory. Creating a custom solution requires a real, current, verifiable gap in the DS, composition must be considered before duplication, and application code MUST consume the DS through its verified public API.**
