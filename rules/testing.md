@@ -1,216 +1,125 @@
 # Testing Rules
 
-This file defines **mandatory testing constraints**. These rules govern test structure, behavior, isolation, async execution, mocking, and verification.
+This file defines mandatory testing constraints. The rules are target architecture, not a description of every current repository configuration.
 
-When a rule applies, the agent **MUST** obey it. The absence of explicit permission **MUST NOT** be interpreted as permission to create an exception.
+## Current Code Is Not Architectural Precedent
 
-## Testing Is Part of Implementation
+Existing code in `nino-app/apps/manager` is current/legacy evidence. If existing code conflicts with this file, it MUST NOT be copied, extended, or used as justification for a new violation.
 
-Tests are part of implementation, not post-implementation cleanup.
+## Test Runner Baseline
 
-When a task changes behavior, the agent **MUST determine the required tests before considering the task complete**.
+The monorepo contains Vitest tooling, and relevant packages such as the Design System already expose Vitest scripts. However, the current `apps/manager/package.json` does not declare a test script. Therefore the agent MUST NOT invent a manager test command or claim that manager testing is already configured.
 
-Compilation or lint success **MUST NOT** be treated as sufficient evidence for a behavior change.
-
-## Test Runner
-
-The repository uses **Vitest** in relevant packages. Existing repository configuration is authoritative for commands, environments, workspaces, and package-specific behavior. fileciteturn81file0L2-L5
-
-The agent **MUST use the configured runner and scripts**. It **MUST NOT** introduce Jest, Mocha, or another runner merely for familiarity or convenience.
+When adding the manager test workflow, use the repository's approved Vitest configuration and scripts rather than introducing Jest, Mocha, or another runner merely for familiarity.
 
 ## Test Location
 
-For application source under `src/`, tests **MUST live under a dedicated `__tests__/` tree that mirrors the tested `src/` structure**.
+For application source under `src/`, tests MUST live under a dedicated `__tests__/` tree that mirrors the tested source structure, unless a package-specific rule explicitly states otherwise.
 
-```text
-src/
-  manager/
-    components/
-      UserCard.tsx
+Existing colocated tests in the Design System are package-specific precedent only and MUST NOT silently become the manager convention.
 
-__tests__/
-  manager/
-    components/
-      UserCard.test.tsx
-```
+## Observable Behavior
 
-Production source **MUST NOT** be placed under `__tests__/`.
+UI tests MUST prefer observable behavior and public contracts over implementation details. Testing Library's guiding principles require tests to resemble user interaction and discourage dependence on internal state, methods, lifecycle details, and child implementation.
 
-The repository contains colocated tests in the Design System; that is a package-specific convention and is not the application-wide convention for new tests. fileciteturn82file0L2-L5
+The agent MUST NOT normally assert internal component state, private helpers, implementation-only structure, or CSS classes when a semantic query expresses the behavior.
 
-## Test Observable Behavior and Public Contracts
+## UI Queries
 
-UI tests **MUST prefer observable behavior and public contracts over implementation details**.
-
-Testing Library's guiding principle is that tests should resemble how software is used; its documentation explicitly discourages dependence on internal state, internal methods, lifecycle methods, and child-component implementation. citeturn658130search0turn658130search1
-
-The agent **MUST NOT normally assert on**:
-
-- internal component state;
-- private helpers;
-- component-instance internals;
-- implementation-only child structure;
-- CSS classes when semantic queries can express the behavior;
-- implementation details that are not part of the public contract.
-
-Testing implementation details makes refactors more likely to break tests without changing behavior and can reduce the signal that tests provide about real defects. citeturn658130search2turn658130search6
-
-Exceptions **MUST** be justified by the unit's actual contract and test purpose, not convenience.
-
-## UI Query Rules
-
-When Testing Library is used, the agent **MUST prefer semantic, user-oriented queries**.
-
-Preferred order:
+When Testing Library is used, prefer:
 
 1. `getByRole` / `findByRole` when applicable;
 2. `getByLabelText` / `findByLabelText` for form controls;
 3. other accessible/user-oriented queries;
 4. test IDs only when no suitable semantic query exists.
 
-Testing Library identifies `getByRole` as the top general preference and recommends queries that resemble user interaction. citeturn658130search3
-
-The agent **MUST NOT** use brittle implementation selectors when an appropriate semantic query exists.
+Brittle implementation selectors MUST NOT be used when an appropriate semantic query exists.
 
 ## Test Responsibility
 
-Every test case, test helper, fixture, factory, and data builder **MUST have one coherent responsibility**.
-
-A test **SHOULD** verify one behavior or one coherent contract.
-
-The agent **MUST NOT** create giant tests that verify unrelated behaviors merely because they share setup.
-
-Test names **MUST describe observable behavior or a contract**, not implementation mechanics.
+Each test case, fixture, factory, and helper MUST have one coherent responsibility. Tests SHOULD verify one behavior or one coherent contract. Test names MUST describe observable behavior or a contract rather than implementation mechanics.
 
 ## Arrange / Act / Assert
 
-Tests **SHOULD** have a clear:
-
-```text
-Arrange → Act → Assert
-```
-
-Incidental setup **MUST NOT** obscure the behavior being tested. When setup becomes complex, the agent **MUST simplify or decompose it by responsibility**.
+Tests SHOULD make Arrange → Act → Assert boundaries clear. Complex setup MUST NOT obscure the behavior under test; when setup acquires unrelated responsibilities it MUST be simplified or decomposed.
 
 ## Mocking
 
-Mocking **MUST** be limited to dependencies that are external, expensive, nondeterministic, unavailable, or otherwise inappropriate to exercise for the test's purpose.
-
-The agent **MUST NOT** mock the unit under test merely to simplify assertions.
-
-The agent **MUST NOT** mock away meaningful behavior and then claim that the behavior was verified.
+Mocks MUST be limited to external, expensive, nondeterministic, unavailable, or otherwise inappropriate dependencies for the test's purpose. The unit under test MUST NOT be mocked merely to simplify assertions. Meaningful behavior MUST NOT be mocked away and then claimed as verified.
 
 ## Zustand Tests
 
-When testing Zustand application state:
+When Zustand application state is introduced:
 
-- tests **MUST verify observable state and actions**;
-- tests **MUST NOT** depend on Zustand internals;
-- each test **MUST isolate or reset application state**;
-- tests **MUST NOT** depend on state leaked by another test.
+- tests MUST verify observable state and actions;
+- tests MUST NOT depend on Zustand internals;
+- each test MUST isolate or reset relevant application state;
+- tests MUST NOT depend on state leaked by another test.
 
-Consumers allowed by `rules/hooks.md` (Pages, Templates, Layouts, Guards, Loaders, Providers, and approved Custom Hooks) **SHOULD** be tested through observable behavior rather than merely asserting that a Store Hook was called.
+Atoms, Molecules, and Organisms MUST remain testable without direct application-level Zustand consumption.
 
-Atoms, Molecules, and Organisms **MUST remain testable without application-level Zustand state**.
+## Business Logic and Regression
 
-## Business Logic
+Business rules outside TSX SHOULD be independently testable whenever practical. Utilities, domain logic, Service operations, selectors, and meaningful Custom Hooks SHOULD have focused contract tests.
 
-Business rules outside TSX **MUST be independently testable whenever practical**.
+Business logic MUST NOT be moved into TSX merely to avoid focused tests.
 
-Utilities, domain logic, Service operations, selectors, and meaningful Custom Hooks **SHOULD** have focused tests for their contracts.
+When fixing a bug, the agent MUST add or update a regression test unless a documented technical reason makes that impractical. The regression MUST fail before the fix and pass after it when executable.
 
-Business logic **MUST NOT** be moved into TSX merely to avoid writing focused tests.
+The agent MUST consider invalid inputs, missing values, empty inputs, boundaries, failure responses, and relevant authorization outcomes.
 
-## Edge Cases and Regression Tests
-
-The agent **MUST consider** invalid inputs, missing values, empty inputs, boundary values, failure responses, and relevant authorization/permission outcomes.
-
-When fixing a bug, the agent **MUST add or update a regression test** unless a documented technical reason makes that impractical. Where executable, the regression test **MUST fail before the fix and pass after it**.
-
-Coverage percentage is **evidence, not proof of correctness**. The agent **MUST NOT** create meaningless tests merely to increase coverage.
+Coverage is evidence, not proof. Meaningless tests MUST NOT be added merely to increase coverage.
 
 ## Async Tests
 
-Async behavior **MUST** be awaited and verified through deterministic completion or failure.
+Async behavior MUST be awaited and verified deterministically. Use Vitest's documented async mechanisms and Testing Library's `findBy*`/`waitFor` when appropriate.
 
-Vitest documents `async`/`await`, `resolves`, and `rejects` as the standard async mechanisms and warns against unawaited assertions. citeturn658130search7
+The agent MUST NOT use arbitrary sleeps, unawaited assertions whose result matters, or timing hacks that conceal race conditions.
 
-The agent **MUST NOT**:
+## Isolation
 
-- use arbitrary sleeps to wait for async work;
-- leave async assertions unawaited when their result matters;
-- use timing hacks to conceal race conditions.
+Each test MUST be independently executable and MUST NOT depend on execution order, leaked module state, leaked Zustand state, prior output, or uncontrolled external services.
 
-For async UI updates, use deterministic async utilities such as Testing Library `findBy*` or `waitFor` when appropriate. citeturn658130search3turn658130search10
-
-## Test Isolation
-
-Each test **MUST** be independently executable and **MUST NOT** depend on execution order, leaked module state, leaked Zustand state, previous test output, or uncontrolled external services.
-
-Vitest runs tests in an isolated environment by default. Project configuration **MUST NOT** disable isolation merely to make tests pass. citeturn658130search8
-
-Shared resources **MUST** be created and cleaned up deterministically.
+Where Vitest isolation is configured, it MUST NOT be disabled merely to make tests pass.
 
 ## No Test Circumvention
 
-The agent **MUST NOT**:
+The agent MUST NOT disable failing tests, add unjustified skips, weaken assertions, mock away the behavior under investigation, alter configuration to conceal defects, delete regression tests for convenience, or disable isolation to hide shared-state problems.
 
-- disable failing tests;
-- skip tests without an explicit documented reason;
-- weaken assertions to make a test pass;
-- mock away the behavior under investigation;
-- change configuration to conceal defects;
-- delete regression tests because they are inconvenient;
-- disable isolation to hide shared-state problems.
-
-A failing test **MUST** be investigated, not hidden.
+A failing test MUST be investigated, not hidden.
 
 ## Verification Before Completion
 
-Before completing a coding task, the agent **MUST**:
+The agent MUST:
 
 1. identify changed behavior requiring tests;
 2. inspect existing relevant tests before creating duplicates;
-3. add or update focused tests;
-4. use semantic/user-oriented UI queries where applicable;
-5. run the relevant test file(s);
-6. run the broader relevant package/project suite when practical;
-7. investigate every unexpected failure;
-8. verify no test was weakened, skipped, or removed without an explicit reason;
+3. ensure the package test workflow actually exists before invoking package-specific commands;
+4. add or update focused tests;
+5. use semantic/user-oriented queries where applicable;
+6. run the relevant configured test command(s);
+7. investigate unexpected failures;
+8. verify no test was weakened, skipped, or removed without explicit justification;
 9. verify async assertions are awaited;
 10. inspect the final diff.
 
-Passing the suite **does not prove** that every user requirement was implemented correctly.
+Passing a suite does not prove every requirement was implemented correctly.
 
 ## Mechanical Enforcement
 
-Whenever technically possible, the following **MUST** be mechanically enforced:
+Where technically possible, automated checks MUST enforce test location/naming, TypeScript correctness, test linting, forbidden skip/focused modes, configured coverage thresholds, package test configuration, and objectively detectable violations of required query conventions.
 
-- test file location/naming conventions;
-- test discovery/configuration;
-- TypeScript errors in tests;
-- lint rules for tests;
-- forbidden test skips/focused-only modes;
-- configured coverage thresholds;
-- production/test dependency restrictions;
-- attempts to disable Vitest isolation;
-- objectively detectable violations of required semantic-query conventions.
-
-When a check fails, the agent **MUST fix the underlying problem rather than weaken the test or enforcement rule**.
+The agent MUST fix the underlying problem rather than weaken the test or enforcement.
 
 ## Technical References
 
-External technical guidance incorporated into these rules:
+- https://testing-library.com/docs/guiding-principles/
+- https://testing-library.com/docs/queries/about/
+- https://vitest.dev/guide/learn/async
+- https://vitest.dev/config/isolate.html
 
-- Testing Library — Guiding Principles: https://testing-library.com/docs/guiding-principles/
-- Testing Library — Introduction / implementation details: https://testing-library.com/docs/
-- Testing Library — Query priority: https://testing-library.com/docs/queries/about/
-- Vitest — Async testing: https://vitest.dev/guide/learn/async
-- Vitest — Isolation: https://vitest.dev/config/isolate.html
-- Kent C. Dodds — Testing Implementation Details: https://kentcdodds.com/blog/testing-implementation-details
-
-External guidance defines testing principles; **Nino-specific structure and architecture remain authoritative for this project**.
+External guidance defines testing principles; Nino-specific structure and architecture remain authoritative.
 
 ## Final Rule
 
-> **Tests must prove observable behavior, protect contracts and regressions, remain isolated and deterministic, and never be weakened merely to make the suite pass.**
+> Tests MUST prove observable behavior, protect contracts and regressions, remain isolated and deterministic, and never be weakened merely to make the suite pass. Current manager tooling MUST be inspected before test commands are assumed or invented.
