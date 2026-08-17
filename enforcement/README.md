@@ -22,10 +22,12 @@ Each architecture rule declares one dependency mode:
 
 This distinction is intentional. A generic transitive ban on UI layers would incorrectly reject valid composition through an authorized intermediate layer.
 
-The direct/transitive distinction follows the same conceptual separation used by established dependency-analysis tooling, which distinguishes ordinary dependency rules from reachable/transitive dependency rules. See dependency-cruiser's rule reference for the `reachable` mechanism.
+## Current enforcement model
 
-## Current migration
+The legacy `audit-*` family has been removed. The current hook layer is composed of narrow `enforce-*` hooks for objectively observable invariants, backed by shared executable runtime in `hooks/hook-kit.mjs`.
 
-Legacy `audit-*` hooks are being migrated incrementally. Do not recreate legacy one-hook-per-rule behavior merely to preserve file names. Each migrated check must have a documented responsibility and a clear destination in the current rules/skills architecture.
+Semantic responsibilities such as component responsibility, cohesion, abstraction quality, and maintainability remain owned by Skills and rules rather than being encoded as brittle blocking regexes.
 
-The first enforcement family is architectural import boundaries. Semantic decisions such as component responsibility, cohesion, or whether an abstraction is worthwhile remain Skill-level concerns.
+Complexity remains diagnostic: `tools/complexity-analyzer.mjs` produces structural signals that feed semantic review. It is not a universal hard gate based on arbitrary thresholds.
+
+The separate `hooks/nino-api-rules.mjs` family remains independent from the frontend audit migration and continues to enforce nino-api-specific rules.
